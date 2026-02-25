@@ -17,6 +17,9 @@
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <style>
 /* ═══ iOS PWA NATIVE FEEL ═══ */
 html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-text-size-adjust:100%}
@@ -308,6 +311,33 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--navy3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:.71rem;padding:11px 22px;border-radius:30px;opacity:0;pointer-events:none;transition:all .3s cubic-bezier(.4,0,.2,1);z-index:999;white-space:nowrap;box-shadow:0 8px 30px rgba(0,0,0,.5);backdrop-filter:blur(10px)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
+/* SYNC / AUTH UI */
+.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .4s}
+.sync-dot.online{background:var(--green);box-shadow:0 0 6px rgba(0,149,122,.5)}
+.sync-dot.offline{background:var(--text3)}
+.sync-dot.syncing{background:var(--amber);animation:pulse 1s infinite}
+.sync-dot.error{background:var(--red)}
+.sync-label{font-family:var(--mono);font-size:.6rem;color:var(--text3);letter-spacing:.06em}
+
+/* USER CODE SETUP SCREEN */
+.auth-overlay{position:fixed;inset:0;background:rgba(248,249,252,.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(8px)}
+.auth-overlay.hidden{display:none}
+.auth-box{background:#fff;border:1px solid var(--border);border-radius:20px;padding:32px 28px;max-width:380px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,.08);text-align:center}
+.auth-logo{width:56px;height:56px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto 18px;font-family:var(--mono);font-weight:700;color:#080c14}
+.auth-title{font-family:var(--display);font-size:1.3rem;color:var(--text);margin-bottom:6px}
+.auth-sub{font-family:var(--mono);font-size:.68rem;color:var(--text3);margin-bottom:24px;line-height:1.6}
+.auth-input{font-family:var(--mono);font-size:1.1rem;font-weight:600;letter-spacing:.2em;text-align:center;text-transform:uppercase;padding:14px;border:2px solid var(--border);border-radius:10px;width:100%;outline:none;color:var(--text);background:var(--navy3);transition:border-color .2s}
+.auth-input:focus{border-color:var(--gold);background:var(--navy4)}
+.auth-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#080c14;border:none;border-radius:10px;font-family:var(--body);font-size:.88rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;margin-top:14px;transition:all .2s}
+.auth-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(201,168,76,.3)}
+.auth-hint{font-family:var(--mono);font-size:.62rem;color:var(--text3);margin-top:14px;line-height:1.6;background:var(--navy3);border-radius:8px;padding:10px 12px;text-align:left}
+.auth-hint b{color:var(--gold)}
+.auth-change{font-family:var(--mono);font-size:.62rem;color:var(--text3);margin-top:10px;cursor:pointer;text-decoration:underline}
+
+/* SYNC STATUS BAR */
+.sync-bar{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;background:var(--navy3);border:1px solid var(--border);cursor:pointer;transition:all .2s;user-select:none}
+.sync-bar:hover{border-color:var(--border2)}
+
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#d0d6e4;border-radius:4px}
 
 @media(max-width:500px){
@@ -337,13 +367,34 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
 </svg>
 
 <!-- HEADER -->
+<!-- AUTH OVERLAY -->
+<div class="auth-overlay" id="auth-overlay">
+  <div class="auth-box">
+    <div class="auth-logo">TL</div>
+    <div class="auth-title">TradeLog Pro</div>
+    <div class="auth-sub">Enter your personal sync code to access and sync your trades across all devices</div>
+    <input class="auth-input" id="auth-code-input" maxlength="12" placeholder="YOUR CODE"
+      oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+      onkeydown="if(event.key==='Enter')authConfirm()">
+    <button class="auth-btn" onclick="authConfirm()">ENTER TRADELOG →</button>
+    <div class="auth-hint">
+      <b>New here?</b> Pick any code (e.g. <b>RAJ2024</b> or <b>TRADER01</b>) — this becomes your personal key.<br><br>
+      <b>Returning?</b> Enter the same code you used before and all your trades will load instantly.<br><br>
+      <b>Multiple devices?</b> Use the same code on your phone and laptop — trades sync automatically.
+    </div>
+  </div>
+</div>
+
 <header class="hdr">
   <div class="logo-mark">
     <div class="logo-icon">TL</div>
     <div class="logo-text">Trade<span>Log</span> Pro</div>
   </div>
   <div class="hdr-r">
-    <div class="live-b"><div class="live-dot"></div>LIVE</div>
+    <div class="sync-bar" onclick="showUserInfo()" title="Tap to see your sync code">
+      <div class="sync-dot offline" id="sync-dot"></div>
+      <span class="sync-label" id="sync-label">OFFLINE</span>
+    </div>
     <div class="hdr-date"><strong id="hdr-date"></strong><span id="hdr-day"></span></div>
   </div>
 </header>
@@ -1143,9 +1194,10 @@ function saveTrade(){
     exitReason:document.getElementById('j-exit-reason').value,
     notes:document.getElementById('j-notes').value,
   };
-  try{const t=JSON.parse(localStorage.getItem('tlp_trades')||'[]');t.unshift(trade);localStorage.setItem('tlp_trades',JSON.stringify(t))}catch(e){}
-  clearJournal();showToast('✅  Trade saved');
-  setTimeout(()=>switchTab('history'),800);
+  setSyncStatus('syncing');
+  db.collection('users').doc(USER_CODE).collection('trades').doc(String(trade.id)).set(trade)
+    .then(()=>{setSyncStatus('online');clearJournal();showToast('✅  Trade saved & synced');setTimeout(()=>switchTab('history'),800);})
+    .catch(e=>{setSyncStatus('error');showToast('⚠️  Saved offline — will sync when connected');clearJournal();setTimeout(()=>switchTab('history'),800);});
 }
 
 function clearJournal(){
@@ -1163,7 +1215,31 @@ function clearJournal(){
 }
 
 // ── DATA HELPER ───────────────────────────────────
-function getTrades(){try{return JSON.parse(localStorage.getItem('tlp_trades')||'[]')}catch(e){return[]}}
+// In-memory cache — populated on login and kept fresh
+let _tradesCache = [];
+let _chargesCache = {};
+
+function getTrades(){ return _tradesCache; }
+
+async function loadAllData(){
+  if(!USER_CODE) return;
+  setSyncStatus('syncing');
+  try{
+    const [tSnap, cSnap] = await Promise.all([
+      db.collection('users').doc(USER_CODE).collection('trades').orderBy('id','desc').get(),
+      db.collection('users').doc(USER_CODE).collection('charges').get()
+    ]);
+    _tradesCache = tSnap.docs.map(d=>d.data());
+    _chargesCache = {};
+    cSnap.docs.forEach(d=>{ _chargesCache[d.id] = d.data(); });
+    setSyncStatus('online');
+    renderHistory();
+  }catch(e){
+    console.error(e);
+    setSyncStatus('error');
+    showToast('⚠️  Could not load data — check connection');
+  }
+}
 
 // ── HISTORY RENDER ────────────────────────────────
 let chartInstances={};
@@ -1511,8 +1587,13 @@ function renderLog(){
 }
 
 function delTrade(id){
-  try{let t=getTrades();t=t.filter(x=>x.id!==id);localStorage.setItem('tlp_trades',JSON.stringify(t))}catch(e){}
-  renderLog();showToast('Entry removed');
+  setSyncStatus('syncing');
+  db.collection('users').doc(USER_CODE).collection('trades').doc(String(id)).delete()
+    .then(()=>{
+      _tradesCache=_tradesCache.filter(x=>x.id!==id);
+      renderLog();showToast('Entry removed');setSyncStatus('online');
+    })
+    .catch(()=>showToast('⚠️  Could not delete — check connection'));
 }
 
 // ── UTILS ──────────────────────────────────────────
@@ -1528,8 +1609,8 @@ function showToast(msg){
 
 
 // ── DAILY CHARGES (separate from trades) ─────────────────────────
-function getDayCharges(){try{return JSON.parse(localStorage.getItem('tlp_charges')||'{}')}catch(e){return{}}}
-function saveDayChargesData(data){try{localStorage.setItem('tlp_charges',JSON.stringify(data))}catch(e){}}
+function getDayCharges(){ return _chargesCache; }
+function saveDayChargesData(data){ _chargesCache = data; }
 
 function calcDayNet(){
   const b=parseFloat(document.getElementById('dc-brokerage').value)||0;
@@ -1546,23 +1627,27 @@ function saveDayCharges(){
   const brok=parseFloat(document.getElementById('dc-brokerage').value)||0;
   const chg=parseFloat(document.getElementById('dc-charges').value)||0;
   if(brok===0&&chg===0){showToast('⚠️  Enter at least one charge');return}
-  const data=getDayCharges();
-  data[date]={brokerage:brok,charges:chg,total:Math.round((brok+chg)*100)/100};
-  saveDayChargesData(data);
-  document.getElementById('dc-brokerage').value='';
-  document.getElementById('dc-charges').value='';
-  document.getElementById('dc-total').value='';
-  document.getElementById('dc-total').style.color='';
-  renderChargesList();
-  showToast('✅  Charges saved for '+date);
+  const entry={brokerage:brok,charges:chg,total:Math.round((brok+chg)*100)/100};
+  setSyncStatus('syncing');
+  db.collection('users').doc(USER_CODE).collection('charges').doc(date).set(entry)
+    .then(()=>{
+      _chargesCache[date]=entry;
+      document.getElementById('dc-brokerage').value='';
+      document.getElementById('dc-charges').value='';
+      document.getElementById('dc-total').value='';
+      document.getElementById('dc-total').style.color='';
+      renderChargesList();
+      setSyncStatus('online');
+      showToast('✅  Charges saved for '+date);
+    })
+    .catch(()=>{ setSyncStatus('error'); showToast('⚠️  Save failed — check connection'); });
 }
 
 function deleteDayCharges(date){
-  const data=getDayCharges();
-  delete data[date];
-  saveDayChargesData(data);
-  renderChargesList();
-  showToast('Charges removed for '+date);
+  setSyncStatus('syncing');
+  db.collection('users').doc(USER_CODE).collection('charges').doc(date).delete()
+    .then(()=>{ delete _chargesCache[date]; renderChargesList(); setSyncStatus('online'); showToast('Charges removed for '+date); })
+    .catch(()=>showToast('⚠️  Delete failed — check connection'));
 }
 
 function renderChargesList(){
@@ -1626,8 +1711,73 @@ function getAllCharges(){
   return{brokerage:Math.round(totalBrok*100)/100,charges:Math.round(totalChg*100)/100,total:Math.round((totalBrok+totalChg)*100)/100};
 }
 
+// ── FIREBASE CONFIG ───────────────────────────────
+// 🔧 REPLACE THESE WITH YOUR FIREBASE PROJECT VALUES
+// Get them from: console.firebase.google.com → your project → Project Settings → Web App
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyB2fRU4YiyOVbtmYoEdwum4J9dH1hdbW18",
+  authDomain:        "tradelog-pro-db481.firebaseapp.com",
+  projectId:         "tradelog-pro-db481",
+  storageBucket:     "tradelog-pro-db481.firebasestorage.app",
+  messagingSenderId: "305895005109",
+  appId:             "1:305895005109:web:ef3ed2e100c5f34d9d17fc"
+};
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.firestore();
+db.settings({cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED});
+db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+
+let USER_CODE = '';
+
+// ── SYNC STATUS ────────────────────────────────────
+function setSyncStatus(state){
+  const dot=document.getElementById('sync-dot');
+  const lbl=document.getElementById('sync-label');
+  if(!dot||!lbl)return;
+  dot.className='sync-dot '+state;
+  const map={online:'SYNCED',offline:'OFFLINE',syncing:'SYNCING…',error:'ERROR'};
+  lbl.textContent=map[state]||state.toUpperCase();
+}
+
+// ── AUTH / USER CODE ───────────────────────────────
+function authConfirm(){
+  const code=document.getElementById('auth-code-input').value.trim();
+  if(code.length<3){showToast('⚠️  Code must be at least 3 characters');return;}
+  USER_CODE=code;
+  localStorage.setItem('tlp_user_code',code);
+  document.getElementById('auth-overlay').classList.add('hidden');
+  loadChecks();
+  loadAllData();
+  showToast('Welcome back, '+code+' 👋');
+}
+
+function showUserInfo(){
+  if(!USER_CODE){document.getElementById('auth-overlay').classList.remove('hidden');return;}
+  const msg='Your sync code: '+USER_CODE+'\n\nUse this same code on any device to access your trades.\n\nTap OK to continue or change code below.';
+  if(confirm(msg+'\n\n⚠️  Change code? (Cancel = keep current)')){
+    const newCode=prompt('Enter new sync code (min 3 chars):','');
+    if(newCode&&newCode.trim().length>=3){
+      USER_CODE=newCode.trim().toUpperCase();
+      localStorage.setItem('tlp_user_code',USER_CODE);
+      _tradesCache=[];_chargesCache={};
+      loadAllData();
+      showToast('Switched to code: '+USER_CODE);
+    }
+  }
+}
+
 // ── INIT CALLS ────────────────────────────────────
-loadChecks();
+const savedCode=localStorage.getItem('tlp_user_code');
+if(savedCode){
+  USER_CODE=savedCode;
+  document.getElementById('auth-overlay').classList.add('hidden');
+  loadChecks();
+  loadAllData();
+} else {
+  document.getElementById('auth-overlay').classList.remove('hidden');
+  loadChecks();
+}
 </script>
 
 <script>
