@@ -579,9 +579,20 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
       <div class="field"><div class="flabel">Primary Entry Reason</div>
         <select id="j-entry-reason">
           <option value="">— Select entry reason —</option>
-          <option value="FOMO">FOMO — Fear of Missing Out</option>
-          <option value="SETUP">Setup — Valid Technical Setup</option>
-          <option value="HERO-ZERO">Hero-Zero — High Risk, High Reward</option>
+          <optgroup label="✅ Plan-Based">
+            <option value="VALID SETUP">Valid Setup — Followed my trading plan</option>
+            <option value="BREAKOUT">Breakout — Price broke key level</option>
+            <option value="REVERSAL SIGNAL">Reversal Signal — Candle / pattern reversal</option>
+            <option value="S/R BOUNCE">Support / Resistance — Bounced off key zone</option>
+            <option value="TREND CONTINUATION">Trend Continuation — Pullback entry with trend</option>
+          </optgroup>
+          <optgroup label="⚠️ Emotional / Unplanned">
+            <option value="FOMO">FOMO — Feared missing the move</option>
+            <option value="REVENGE TRADE">Revenge Trade — Entered after a loss emotionally</option>
+            <option value="GUT FEELING">Gut Feeling — No clear reason / impulse</option>
+            <option value="HERO-ZERO">Hero-Zero — High Risk, High Reward</option>
+            <option value="SETUP">Setup — Valid Technical Setup</option>
+          </optgroup>
         </select>
       </div>
     </div>
@@ -593,9 +604,22 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
       <div class="field"><div class="flabel">Dominant Emotion</div>
         <select id="j-emotion">
           <option value="">— Select emotion —</option>
-          <option value="FEAR">Fear — Scared of losing, moved SL prematurely</option>
-          <option value="GREED">Greed — Held too long, didn't take planned TP</option>
-          <option value="ANGER">Anger — Revenge traded, irrational decision</option>
+          <optgroup label="🟢 Positive">
+            <option value="CALM">Calm &amp; Focused — Followed the plan</option>
+            <option value="CONFIDENT">Confident — Trade going as expected</option>
+          </optgroup>
+          <optgroup label="🟡 Neutral / Watch">
+            <option value="ANXIOUS">Anxious — Nervous, kept watching P&amp;L</option>
+            <option value="IMPATIENT">Impatient — Couldn't wait for setup to play out</option>
+            <option value="OVERCONFIDENT">Overconfident — Sized up or ignored risk rules</option>
+          </optgroup>
+          <optgroup label="🔴 Negative">
+            <option value="FEAR">Fear — Scared of losing, tempted to exit early</option>
+            <option value="GREED">Greed — Wanted more, didn't take planned TP</option>
+            <option value="ANGRY">Angry / Frustrated — Irrational mindset after a loss</option>
+            <option value="NUMB">Numb / Detached — Not emotionally present</option>
+            <option value="ANGER">Anger — Revenge traded, irrational decision</option>
+          </optgroup>
         </select>
       </div>
     </div>
@@ -607,9 +631,23 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
       <div class="field"><div class="flabel">Exit Trigger</div>
         <select id="j-exit-reason">
           <option value="">— Select exit reason —</option>
-          <option value="TARGET HIT">Target Hit — TP reached as planned</option>
-          <option value="STOPLOSS HIT">Stoploss Hit — SL triggered</option>
-          <option value="FEAR">Fear — Exited early due to emotion</option>
+          <optgroup label="✅ Planned Exit">
+            <option value="TARGET HIT">Target Hit — TP reached as planned</option>
+            <option value="STOPLOSS HIT">Stoploss Hit — SL triggered</option>
+            <option value="TRAILING SL HIT">Trailing SL Hit — Trailed and stopped out</option>
+            <option value="SETUP INVALIDATED">Setup Invalidated — Price action changed</option>
+          </optgroup>
+          <optgroup label="⚡ Manual Exit">
+            <option value="MANUAL EXIT PROFIT">Manual Exit — Profit — Took profit before TP</option>
+            <option value="MANUAL EXIT LOSS">Manual Exit — Loss — Exited early out of fear</option>
+            <option value="NEWS EVENT">News / Event — Closed before high-impact event</option>
+            <option value="END OF DAY">End of Day — Closed before market close</option>
+          </optgroup>
+          <optgroup label="⚠️ Emotional Exit">
+            <option value="PANIC EXIT">Panic Exit — Fear, closed without reason</option>
+            <option value="REVENGE EXIT">Revenge Exit — Panicked and closed irrationally</option>
+            <option value="FEAR">Fear — Exited early due to emotion</option>
+          </optgroup>
         </select>
       </div>
     </div>
