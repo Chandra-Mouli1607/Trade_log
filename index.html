@@ -352,6 +352,7 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
 <nav class="nav">
   <div class="ntab active" onclick="switchTab('checklist')"><span class="ti">☑️</span> Checklist</div>
   <div class="ntab" onclick="switchTab('journal')"><span class="ti">📝</span> Journal</div>
+  <div class="ntab" onclick="switchTab('charges')"><span class="ti">💸</span> Charges</div>
   <div class="ntab" onclick="switchTab('history')"><span class="ti">📊</span> History</div>
 </nav>
 
@@ -442,6 +443,49 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
   <button class="reset-btn" onclick="resetAll()">↺ &nbsp; RESET ALL — START NEW DAY</button>
 </div>
 
+
+<!-- ═══════════ DAILY CHARGES ═══════════ -->
+<div id="panel-charges" class="panel">
+  <div class="slabel">Daily Charges Entry</div>
+  <div class="card">
+    <div class="card-head"><div class="chi chi-orange">💸</div><div><div class="ch-title">Enter Day's Charges</div><div class="ch-sub">Enter once per trading day — applies to all trades that day</div></div></div>
+    <div class="card-form">
+      <div class="frow">
+        <div class="field">
+          <div class="flabel">Date</div>
+          <input type="date" id="dc-date">
+        </div>
+      </div>
+      <div class="frow c2">
+        <div class="field">
+          <div class="flabel">Brokerage (₹)</div>
+          <input type="number" id="dc-brokerage" placeholder="e.g. 40.00" step="any" min="0" oninput="calcDayNet()">
+        </div>
+        <div class="field">
+          <div class="flabel">Other Charges (₹) <span style="font-size:.55rem;color:var(--text3)">STT, GST, SEBI…</span></div>
+          <input type="number" id="dc-charges" placeholder="e.g. 18.50" step="any" min="0" oninput="calcDayNet()">
+        </div>
+      </div>
+      <div class="frow">
+        <div class="field">
+          <div class="flabel">Total Charges <span style="font-size:.55rem;color:var(--orange)">auto</span></div>
+          <input type="number" id="dc-total" placeholder="0.00" readonly
+            style="background:var(--navy3);border-style:dashed;color:var(--orange);font-weight:600;cursor:default;">
+        </div>
+      </div>
+      <div class="charge-hint">
+        💡 <strong style="color:var(--orange)">Brokerage</strong> = flat fee or per-order broker commission.<br>
+        <strong style="color:var(--amber)">Other Charges</strong> = STT + GST + SEBI turnover fee + exchange transaction charges.<br>
+        These are stored separately and deducted from your day's P&amp;L in analytics.
+      </div>
+      <button class="save-btn" onclick="saveDayCharges()" style="margin-top:14px">SAVE DAY CHARGES &nbsp;→</button>
+    </div>
+  </div>
+
+  <div class="slabel" style="margin-top:4px">Saved Charge Entries</div>
+  <div id="charges-list"></div>
+</div>
+
 <!-- ═══════════ JOURNAL ═══════════ -->
 <div id="panel-journal" class="panel">
   <div class="slabel">Trade Details</div>
@@ -523,36 +567,6 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
             <div class="oopt" onclick="setOutcome(this,'BE','sb')"><span class="oi">➖</span><span class="ol">BREAK EVEN</span></div>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- CHARGES SECTION -->
-  <div class="slabel" style="margin-top:18px">Charges & Costs</div>
-  <div class="card">
-    <div class="card-head"><div class="chi chi-orange">💸</div><div><div class="ch-title">Brokerage & Other Charges</div><div class="ch-sub">These are counted as a loss on your account</div></div></div>
-    <div class="card-form">
-      <div class="frow c2">
-        <div class="field">
-          <div class="flabel">Brokerage (₹)</div>
-          <input type="number" id="j-brokerage" placeholder="e.g. 40.00" step="any" min="0" oninput="calcNetPnl()">
-        </div>
-        <div class="field">
-          <div class="flabel">Other Charges (₹) <span style="font-size:.55rem;color:var(--text3)">STT, GST, etc.</span></div>
-          <input type="number" id="j-charges" placeholder="e.g. 18.50" step="any" min="0" oninput="calcNetPnl()">
-        </div>
-      </div>
-      <div class="frow">
-        <div class="field">
-          <div class="flabel">Net P&L after charges <span style="font-size:.55rem;color:var(--green)">auto</span></div>
-          <input type="number" id="j-net-pnl" placeholder="calculated after saving" readonly
-            style="background:var(--navy3);border-style:dashed;font-weight:500;cursor:default;">
-        </div>
-      </div>
-      <div class="charge-hint">
-        💡 <span>Brokerage</span> = broker commission per trade &nbsp;·&nbsp;
-        <span>Other Charges</span> = STT + GST + SEBI fees + exchange charges.<br>
-        Both are automatically treated as a loss in your analytics.
       </div>
     </div>
   </div>
@@ -812,7 +826,7 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
       <div class="kpi"><div class="kpi-val" id="m-net-pnl">₹0</div><div class="kpi-lbl">Net P&L</div><div class="kpi-sub">After all charges</div></div>
       <div class="kpi"><div class="kpi-val kv-gold" id="m-wr">0%</div><div class="kpi-lbl">Win Rate</div><div class="kpi-sub" id="m-wr-sub">—</div></div>
       <div class="kpi"><div class="kpi-val" id="m-trades">0</div><div class="kpi-lbl">Total Trades</div><div class="kpi-sub" id="m-trades-sub">—</div></div>
-      <div class="kpi"><div class="kpi-val kv-orange" id="m-avg-cost">₹0</div><div class="kpi-lbl">Avg Cost / Trade</div><div class="kpi-sub">Brokerage + charges</div></div>
+      <div class="kpi"><div class="kpi-val kv-orange" id="m-avg-cost">₹0</div><div class="kpi-lbl">Avg Cost / Day</div><div class="kpi-sub">Brokerage + charges</div></div>
     </div>
 
     <!-- Monthly Charges Breakdown -->
@@ -969,6 +983,7 @@ document.getElementById('hdr-day').textContent  = NOW.toLocaleDateString('en-IN'
 document.getElementById('j-date').value = NOW.toISOString().split('T')[0];
 document.getElementById('j-time').value = NOW.toTimeString().slice(0,5);
 document.getElementById('today-date-label').textContent = NOW.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+document.getElementById('dc-date').value = NOW.toISOString().split('T')[0];
 
 Chart.defaults.color = '#8896a8';
 Chart.defaults.font.family = "'DM Mono', monospace";
@@ -980,10 +995,11 @@ let currentYear  = NOW.getFullYear();
 // ── TABS ──────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll('.ntab').forEach((t,i)=>
-    t.classList.toggle('active',['checklist','journal','history'][i]===name));
+    t.classList.toggle('active',['checklist','journal','charges','history'][i]===name));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+name).classList.add('active');
   if(name==='history') renderHistory();
+  if(name==='charges') renderChargesList();
 }
 
 function switchHTab(name) {
@@ -1060,17 +1076,6 @@ function autoCalc(){
   }else if(!isNaN(entry)&&!isNaN(sl)&&entry>0&&sl>0){
     rrEl.value='Risk: '+Math.abs(entry-sl).toFixed(2)+' pts';
   }else rrEl.value='';
-  calcNetPnl();
-}
-
-function calcNetPnl(){
-  const pnl=parseFloat(document.getElementById('j-pnl').value)||0;
-  const brok=parseFloat(document.getElementById('j-brokerage').value)||0;
-  const chg=parseFloat(document.getElementById('j-charges').value)||0;
-  const net=Math.round((pnl-brok-chg)*100)/100;
-  const el=document.getElementById('j-net-pnl');
-  el.value=net;
-  el.style.color=net>=0?'var(--green)':'var(--red)';
 }
 
 function saveTrade(){
@@ -1079,8 +1084,6 @@ function saveTrade(){
   const pair=(pairSelect==='__custom__'?pairCustom:pairSelect).trim();
   if(!pair){showToast('⚠️  Please enter a pair or asset');return}
   const pnl=parseFloat(document.getElementById('j-pnl').value)||0;
-  const brokerage=parseFloat(document.getElementById('j-brokerage').value)||0;
-  const charges=parseFloat(document.getElementById('j-charges').value)||0;
   const trade={
     id:Date.now(),
     date:document.getElementById('j-date').value,
@@ -1094,9 +1097,6 @@ function saveTrade(){
     tp:document.getElementById('j-tp').value,
     qty:document.getElementById('j-qty').value,
     pnl,
-    brokerage,
-    charges,
-    netPnl: Math.round((pnl-brokerage-charges)*100)/100,
     rr:document.getElementById('j-rr').value,
     setup:document.getElementById('j-setup').value,
     outcome,
@@ -1111,7 +1111,7 @@ function saveTrade(){
 }
 
 function clearJournal(){
-  ['j-qty','j-entry','j-exit','j-sl','j-tp','j-pnl','j-rr','j-setup','j-notes','j-brokerage','j-charges','j-net-pnl'].forEach(id=>{
+  ['j-qty','j-entry','j-exit','j-sl','j-tp','j-pnl','j-rr','j-setup','j-notes'].forEach(id=>{
     const el=document.getElementById(id);el.value='';el.style.color='';
   });
   document.getElementById('j-pair').selectedIndex=0;
@@ -1180,14 +1180,14 @@ function renderDashboard(){
 }
 
 function renderTodayCharges(todayTrades){
-  const brok=todayTrades.reduce((s,t)=>s+(t.brokerage||0),0);
-  const chg=todayTrades.reduce((s,t)=>s+(t.charges||0),0);
-  const totalCost=brok+chg;
+  const today=NOW.toISOString().split('T')[0];
+  const dc=getChargesForDate(today);
+  const totalCost=dc.total;
   const grossPnl=todayTrades.reduce((s,t)=>s+(t.pnl||0),0);
-  const netPnl=grossPnl-totalCost;
-  document.getElementById('today-brokerage').textContent=inr(brok);
+  const netPnl=Math.round((grossPnl-totalCost)*100)/100;
+  document.getElementById('today-brokerage').textContent=inr(dc.brokerage);
   document.getElementById('today-brokerage-count').textContent=todayTrades.length+' trade'+(todayTrades.length!==1?'s':'');
-  document.getElementById('today-charges').textContent=inr(chg);
+  document.getElementById('today-charges').textContent=inr(dc.charges);
   document.getElementById('today-total-cost').textContent=inr(totalCost);
   const netEl=document.getElementById('today-net-pnl');
   netEl.textContent=(netPnl>=0?'+':'')+inr(netPnl);
@@ -1197,14 +1197,13 @@ function renderTodayCharges(todayTrades){
 function renderAllTimeLoss(trades){
   const losses=trades.filter(t=>t.outcome==='LOSS');
   const tradeLoss=Math.abs(losses.reduce((s,t)=>s+(t.pnl||0),0));
-  const totalBrok=trades.reduce((s,t)=>s+(t.brokerage||0),0);
-  const totalChg=trades.reduce((s,t)=>s+(t.charges||0),0);
-  const grand=tradeLoss+totalBrok+totalChg;
+  const allChg=getAllCharges();
+  const grand=tradeLoss+allChg.total;
   document.getElementById('cl-trade-losses').textContent='-'+inr(tradeLoss);
   document.getElementById('cl-loss-count').textContent=losses.length+' losing trade'+(losses.length!==1?'s':'');
-  document.getElementById('cl-brokerage').textContent='-'+inr(totalBrok);
-  document.getElementById('cl-brokerage-count').textContent='across '+trades.length+' trade'+(trades.length!==1?'s':'');
-  document.getElementById('cl-charges').textContent='-'+inr(totalChg);
+  document.getElementById('cl-brokerage').textContent='-'+inr(allChg.brokerage);
+  document.getElementById('cl-brokerage-count').textContent='across '+Object.keys(getDayCharges()).length+' day'+(Object.keys(getDayCharges()).length!==1?'s':'');
+  document.getElementById('cl-charges').textContent='-'+inr(allChg.charges);
   document.getElementById('cl-total').textContent='-'+inr(grand);
 }
 
@@ -1222,16 +1221,15 @@ function renderMonthly(year, month){
   });
 
   const grossPnl=trades.reduce((s,t)=>s+(t.pnl||0),0);
-  const totalBrok=trades.reduce((s,t)=>s+(t.brokerage||0),0);
-  const totalChg=trades.reduce((s,t)=>s+(t.charges||0),0);
-  const totalCost=totalBrok+totalChg;
-  const netPnl=grossPnl-totalCost;
+  const mc=getChargesForMonth(year,month);
+  const totalBrok=mc.brokerage,totalChg=mc.charges,totalCost=mc.total;
+  const netPnl=Math.round((grossPnl-totalCost)*100)/100;
   const wins=trades.filter(t=>t.outcome==='WIN');
   const losses=trades.filter(t=>t.outcome==='LOSS');
   const wr=trades.length?Math.round(wins.length/trades.length*100):0;
   const avgCost=trades.length?totalCost/trades.length:0;
   const tradeLoss=Math.abs(losses.reduce((s,t)=>s+(t.pnl||0),0));
-  const grandLoss=tradeLoss+totalBrok+totalChg;
+  const grandLoss=tradeLoss+totalCost;
 
   // KPIs
   const mPnlEl=document.getElementById('m-pnl');
@@ -1245,12 +1243,12 @@ function renderMonthly(year, month){
   document.getElementById('m-wr-sub').textContent=wins.length+'W · '+losses.length+'L';
   document.getElementById('m-trades').textContent=trades.length;
   document.getElementById('m-trades-sub').textContent=wins.length+' wins / '+losses.length+' losses';
-  document.getElementById('m-avg-cost').textContent='-'+inr(avgCost);
+  document.getElementById('m-avg-cost').textContent='-'+inr(mc.days?totalCost/mc.days:0);
 
   // Charge breakdown
   const chargePct=grossPnl!==0?Math.abs(totalCost/grossPnl*100):0;
   document.getElementById('m-brokerage').textContent='-'+inr(totalBrok);
-  document.getElementById('m-brokerage-sub').textContent=trades.length+' trade'+(trades.length!==1?'s':'');
+  document.getElementById('m-brokerage-sub').textContent=mc.days+' day'+(mc.days!==1?'s':'')+' with charges';
   document.getElementById('m-other-charges').textContent='-'+inr(totalChg);
   document.getElementById('m-avg-brokerage').textContent='-'+inr(trades.length?totalBrok/trades.length:0);
   document.getElementById('m-charge-pct').textContent=chargePct.toFixed(1)+'%';
@@ -1259,7 +1257,7 @@ function renderMonthly(year, month){
   document.getElementById('m-cl-trade-losses').textContent='-'+inr(tradeLoss);
   document.getElementById('m-cl-loss-count').textContent=losses.length+' losing trade'+(losses.length!==1?'s':'');
   document.getElementById('m-cl-brokerage').textContent='-'+inr(totalBrok);
-  document.getElementById('m-cl-brokerage-count').textContent=monthName;
+  document.getElementById('m-cl-brokerage-count').textContent=mc.days+' day'+(mc.days!==1?'s':'')+' in '+monthName;
   document.getElementById('m-cl-charges').textContent='-'+inr(totalChg);
   document.getElementById('m-cl-total').textContent='-'+inr(grandLoss);
 
@@ -1435,7 +1433,7 @@ function renderLog(){
     const oc=t.outcome,ocCls=oc==='WIN'?'bw':oc==='LOSS'?'bl':'bb',ocIcon=oc==='WIN'?'✅':oc==='LOSS'?'❌':'➖';
     const pCls=(t.pnl||0)>0?'kv-pos':(t.pnl||0)<0?'kv-neg':'';
     const pStr=(t.pnl>=0?'+':'')+inr(t.pnl);
-    const hasCharges=(t.brokerage||0)+(t.charges||0)>0;
+
     const fields=[
       {l:'Entry Reason',v:t.entryReason||'—'},
       {l:'During Emotion',v:t.emotion||'—'},
@@ -1447,12 +1445,6 @@ function renderLog(){
       t.sl&&`<span class="badge bl">SL: ${t.sl}</span>`,
       t.tp&&`<span class="badge bw">TP: ${t.tp}</span>`,
     ].filter(Boolean).join('');
-    const chargesRow=hasCharges?`
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-        ${t.brokerage?`<span class="badge bo">Brok: ₹${t.brokerage}</span>`:''}
-        ${t.charges?`<span class="badge bo">Charges: ₹${t.charges}</span>`:''}
-        <span class="badge bm">Net: ${(t.netPnl>=0?'+':'')+inr(t.netPnl||0)}</span>
-      </div>`:'';
     return`<div class="tcard">
       <div class="tc-head">
         <div>
@@ -1471,7 +1463,7 @@ function renderLog(){
       </div>
       <div class="tc-body">
         ${prices?`<div class="tc-pills">${prices}</div>`:''}
-        ${chargesRow}
+
         <div class="tc-grid">${fields}</div>
         ${t.notes?`<div class="tc-notes"><div class="tc-notes-l">Mistakes / Comments / Notes</div><div class="tc-notes-v">${esc(t.notes)}</div></div>`:''}
         <div class="tc-actions"><button class="del-btn" onclick="delTrade(${t.id})">Delete Entry</button></div>
@@ -1494,6 +1486,106 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 function showToast(msg){
   const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
   clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+
+// ── DAILY CHARGES (separate from trades) ─────────────────────────
+function getDayCharges(){try{return JSON.parse(localStorage.getItem('tlp_charges')||'{}')}catch(e){return{}}}
+function saveDayChargesData(data){try{localStorage.setItem('tlp_charges',JSON.stringify(data))}catch(e){}}
+
+function calcDayNet(){
+  const b=parseFloat(document.getElementById('dc-brokerage').value)||0;
+  const ch=parseFloat(document.getElementById('dc-charges').value)||0;
+  const total=Math.round((b+ch)*100)/100;
+  const el=document.getElementById('dc-total');
+  el.value=total>0?total:'';
+  el.style.color=total>0?'var(--orange)':'';
+}
+
+function saveDayCharges(){
+  const date=document.getElementById('dc-date').value;
+  if(!date){showToast('⚠️  Please select a date');return}
+  const brok=parseFloat(document.getElementById('dc-brokerage').value)||0;
+  const chg=parseFloat(document.getElementById('dc-charges').value)||0;
+  if(brok===0&&chg===0){showToast('⚠️  Enter at least one charge');return}
+  const data=getDayCharges();
+  data[date]={brokerage:brok,charges:chg,total:Math.round((brok+chg)*100)/100};
+  saveDayChargesData(data);
+  document.getElementById('dc-brokerage').value='';
+  document.getElementById('dc-charges').value='';
+  document.getElementById('dc-total').value='';
+  document.getElementById('dc-total').style.color='';
+  renderChargesList();
+  showToast('✅  Charges saved for '+date);
+}
+
+function deleteDayCharges(date){
+  const data=getDayCharges();
+  delete data[date];
+  saveDayChargesData(data);
+  renderChargesList();
+  showToast('Charges removed for '+date);
+}
+
+function renderChargesList(){
+  const data=getDayCharges();
+  const list=document.getElementById('charges-list');
+  if(!list)return;
+  const keys=Object.keys(data).sort((a,b)=>b.localeCompare(a));
+  if(!keys.length){
+    list.innerHTML='<div class="empty"><div class="empty-icon">💸</div><div class="empty-title">No charges entered yet</div><div class="empty-sub">Enter brokerage and charges for this day</div></div>';
+    return;
+  }
+  list.innerHTML=keys.map(date=>{
+    const d=data[date];
+    const label=new Date(date+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+    return`<div class="tcard">
+      <div class="tc-head">
+        <div>
+          <div class="tc-pair" style="font-size:.9rem">📅 ${label}</div>
+          <div class="tc-meta">${date}</div>
+        </div>
+        <div class="tc-right">
+          <div class="tc-pnl kv-orange">-${inr(d.total||0)}</div>
+        </div>
+      </div>
+      <div class="tc-body">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <span class="badge bo">Brokerage: ${inr(d.brokerage||0)}</span>
+          <span class="badge" style="background:rgba(196,125,0,.09);color:var(--amber);border:1px solid rgba(196,125,0,.2)">Other: ${inr(d.charges||0)}</span>
+          <span class="badge bm">Total: ${inr(d.total||0)}</span>
+        </div>
+        <div class="tc-actions"><button class="del-btn" onclick="deleteDayCharges('${date}')">Delete Entry</button></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── HELPER: get charges for a date range ──────────────────────────
+function getChargesForMonth(year, month){
+  const data=getDayCharges();
+  let totalBrok=0,totalChg=0,days=0;
+  Object.keys(data).forEach(date=>{
+    const d=new Date(date+'T00:00:00');
+    if(d.getFullYear()===year&&d.getMonth()===month){
+      totalBrok+=data[date].brokerage||0;
+      totalChg+=data[date].charges||0;
+      days++;
+    }
+  });
+  return{brokerage:Math.round(totalBrok*100)/100,charges:Math.round(totalChg*100)/100,total:Math.round((totalBrok+totalChg)*100)/100,days};
+}
+
+function getChargesForDate(date){
+  const data=getDayCharges();
+  return data[date]||{brokerage:0,charges:0,total:0};
+}
+
+function getAllCharges(){
+  const data=getDayCharges();
+  let totalBrok=0,totalChg=0;
+  Object.values(data).forEach(d=>{totalBrok+=d.brokerage||0;totalChg+=d.charges||0});
+  return{brokerage:Math.round(totalBrok*100)/100,charges:Math.round(totalChg*100)/100,total:Math.round((totalBrok+totalChg)*100)/100};
 }
 
 // ── INIT CALLS ────────────────────────────────────
