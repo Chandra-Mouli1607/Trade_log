@@ -906,7 +906,7 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
       <div style="display:flex;gap:14px;margin-top:12px;flex-wrap:wrap">
         <div class="legend-item"><div class="legend-dot" style="background:rgba(0,201,167,.3)"></div><span style="font-size:.6rem;color:var(--text3)">Profit day</span></div>
         <div class="legend-item"><div class="legend-dot" style="background:rgba(255,95,109,.25)"></div><span style="font-size:.6rem;color:var(--text3)">Loss day</span></div>
-        <div class="legend-item"><div class="legend-dot" style="background:rgba(201,168,76,.2)"></div><span style="font-size:.6rem;color:var(--text3)">Mixed day</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(201,168,76,.2)"></div><span style="font-size:.6rem;color:var(--text3)">Break even</span></div>
         <div class="legend-item"><div class="legend-dot" style="background:var(--navy3)"></div><span style="font-size:.6rem;color:var(--text3)">No trade</span></div>
       </div>
     </div>
@@ -1546,7 +1546,7 @@ function renderCalendar(trades, gridId, monthId){
   for(let d=1;d<=last.getDate();d++){
     const cell=document.createElement('div');
     const data=dayMap[d];
-    if(data){cell.className=data.count>1?'cal-day mix-day':data.pnl>0?'cal-day win-day':'cal-day loss-day';cell.title=(data.pnl>=0?'+':'')+inr(data.pnl)+' ('+data.count+' trade'+(data.count!==1?'s':'')+')';}
+    if(data){cell.className=data.pnl>0?'cal-day win-day':data.pnl<0?'cal-day loss-day':'cal-day mix-day';cell.title=(data.pnl>=0?'+':'')+inr(data.pnl)+' ('+data.count+' trade'+(data.count!==1?'s':'')+')';}
     else cell.className='cal-day no-trade';
     cell.textContent=d;grid.appendChild(cell);
   }
