@@ -17,9 +17,7 @@
 
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
 <style>
 /* ═══ iOS PWA NATIVE FEEL ═══ */
 html{-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-text-size-adjust:100%}
@@ -597,6 +595,22 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
       </div>
       <div class="frow c4">
         <div class="field"><div class="flabel">Direction</div><select id="j-dir" onchange="autoCalc()"><option value="">—</option><option>Long ↑</option><option>Short ↓</option></select></div>
+        <div class="field">
+          <div class="flabel">Position Type</div>
+          <select id="j-pos-type" onchange="autoCalc()">
+            <option value="">— Select —</option>
+            <optgroup label="Buy">
+              <option value="BUY">Buy (Equity / Futures)</option>
+              <option value="BUY CALL">Buy Call</option>
+              <option value="BUY PUT">Buy Put</option>
+            </optgroup>
+            <optgroup label="Sell">
+              <option value="SELL">Sell (Equity / Futures)</option>
+              <option value="SELL CALL">Sell Call</option>
+              <option value="SELL PUT">Sell Put</option>
+            </optgroup>
+          </select>
+        </div>
         <div class="field"><div class="flabel">Quantity / Lots</div><input type="number" id="j-qty" placeholder="e.g. 1, 50, 75" step="any" oninput="autoCalc()"></div>
         <div class="field"><div class="flabel">Entry Price</div><input type="number" id="j-entry" placeholder="0.00" step="any" oninput="autoCalc()"></div>
         <div class="field"><div class="flabel">Exit Price</div><input type="number" id="j-exit" placeholder="0.00" step="any" oninput="autoCalc()"></div>
@@ -1064,6 +1078,10 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
 </div>
 <div class="toast" id="toast"></div>
 
+<!-- Firebase — loaded before main script so firebase is defined -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
 <script>
 // ── INIT ──────────────────────────────────────────
 const NOW = new Date();
@@ -1148,10 +1166,14 @@ function autoCalc(){
   const tp=parseFloat(document.getElementById('j-tp').value);
   const qty=parseFloat(document.getElementById('j-qty').value)||1;
   const dir=document.getElementById('j-dir').value;
+  const posType=document.getElementById('j-pos-type').value;
+  // BUY positions (Buy, Buy Call, Buy Put): profit when exit > entry
+  // SELL positions (Sell, Sell Call, Sell Put): profit when entry > exit
+  const isSell=posType.startsWith('SELL');
   const pnlEl=document.getElementById('j-pnl');
   const rrEl=document.getElementById('j-rr');
   if(!isNaN(entry)&&!isNaN(exit_)&&entry>0&&exit_>0){
-    const raw=dir==='Short ↓'?(entry-exit_)*qty:(exit_-entry)*qty;
+    const raw=isSell?(entry-exit_)*qty:(exit_-entry)*qty;
     const rounded=Math.round(raw*100)/100;
     pnlEl.value=rounded;
     pnlEl.style.color=rounded>=0?'var(--green)':'var(--red)';
@@ -1160,7 +1182,7 @@ function autoCalc(){
     else setOutcome(document.querySelector('.oopt:nth-child(3)'),'BE','sb');
   }else{pnlEl.value='';pnlEl.style.color=''}
   if(!isNaN(entry)&&!isNaN(sl)&&!isNaN(tp)&&entry>0&&sl>0&&tp>0){
-    const risk=Math.abs(entry-sl),reward=dir==='Short ↓'?Math.abs(entry-tp):Math.abs(tp-entry);
+    const risk=Math.abs(entry-sl),reward=Math.abs(tp-entry);
     if(risk>0)rrEl.value='1 : '+(reward/risk).toFixed(2);
   }else if(!isNaN(entry)&&!isNaN(sl)&&entry>0&&sl>0){
     rrEl.value='Risk: '+Math.abs(entry-sl).toFixed(2)+' pts';
@@ -1180,6 +1202,7 @@ function saveTrade(){
     pair:pair.toUpperCase(),
     market:document.getElementById('j-market').value,
     direction:document.getElementById('j-dir').value,
+    posType:document.getElementById('j-pos-type').value,
     entryPrice:document.getElementById('j-entry').value,
     exitPrice:document.getElementById('j-exit').value,
     sl:document.getElementById('j-sl').value,
@@ -1207,7 +1230,7 @@ function clearJournal(){
   document.getElementById('j-pair').selectedIndex=0;
   document.getElementById('j-pair-custom').value='';
   document.getElementById('j-pair-custom').style.display='none';
-  ['j-market','j-dir','j-entry-reason','j-emotion','j-exit-reason'].forEach(id=>document.getElementById(id).selectedIndex=0);
+  ['j-market','j-dir','j-pos-type','j-entry-reason','j-emotion','j-exit-reason'].forEach(id=>document.getElementById(id).selectedIndex=0);
   document.querySelectorAll('.oopt').forEach(o=>o.className='oopt');
   outcome='';
   document.getElementById('j-date').value=NOW.toISOString().split('T')[0];
@@ -1570,6 +1593,7 @@ function renderLog(){
           <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
             ${t.qty?`<span class="badge bm">Qty: ${t.qty}</span>`:''}
             ${t.market?`<span class="badge bm">${t.market}</span>`:''}
+            ${t.posType?`<span class="badge bm">${t.posType}</span>`:''}
             ${t.direction?`<span class="badge bm">${t.direction}</span>`:''}
             ${t.rr?`<span class="badge bm">${t.rr}</span>`:''}
           </div>
