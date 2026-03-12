@@ -499,10 +499,25 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
   <div class="card">
     <div class="card-head"><div class="chi chi-orange">💸</div><div><div class="ch-title">Enter Day's Charges</div><div class="ch-sub">Enter once per trading day — applies to all trades that day</div></div></div>
     <div class="card-form">
-      <div class="frow">
+      <div class="frow c2">
         <div class="field">
           <div class="flabel">Date</div>
           <input type="date" id="dc-date">
+        </div>
+        <div class="field">
+          <div class="flabel">Market</div>
+          <select id="dc-market">
+            <option value="">— Select market —</option>
+            <option value="Stock Market">Stock Market</option>
+            <option value="Crypto">Crypto</option>
+            <option value="Gold">Gold</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="field">
+          <div class="flabel">Pair / Asset <span style="font-size:.55rem;color:var(--text3)">(opt)</span></div>
+          <input type="text" id="dc-pair" placeholder="e.g. NIFTY, BTC/USDT, GOLD…">
         </div>
       </div>
       <div class="frow c2">
@@ -612,6 +627,19 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
           </select>
         </div>
         <div class="field"><div class="flabel">Quantity / Lots</div><input type="number" id="j-qty" placeholder="e.g. 1, 50, 75" step="any" oninput="autoCalc()"></div>
+        <div class="field">
+          <div class="flabel">Leverage <span style="font-size:.55rem;color:var(--text3)">(opt)</span></div>
+          <select id="j-leverage" onchange="autoCalc()">
+            <option value="1">1X — No Leverage</option>
+            <option value="5">5X</option>
+            <option value="10">10X</option>
+            <option value="25">25X</option>
+            <option value="50">50X</option>
+            <option value="100">100X</option>
+            <option value="150">150X</option>
+            <option value="200">200X</option>
+          </select>
+        </div>
         <div class="field"><div class="flabel">Entry Price</div><input type="number" id="j-entry" placeholder="0.00" step="any" oninput="autoCalc()"></div>
         <div class="field"><div class="flabel">Exit Price</div><input type="number" id="j-exit" placeholder="0.00" step="any" oninput="autoCalc()"></div>
       </div>
@@ -1165,6 +1193,7 @@ function autoCalc(){
   const sl=parseFloat(document.getElementById('j-sl').value);
   const tp=parseFloat(document.getElementById('j-tp').value);
   const qty=parseFloat(document.getElementById('j-qty').value)||1;
+  const leverage=parseFloat(document.getElementById('j-leverage').value)||1;
   const dir=document.getElementById('j-dir').value;
   const posType=document.getElementById('j-pos-type').value;
   // BUY positions (Buy, Buy Call, Buy Put): profit when exit > entry
@@ -1173,7 +1202,7 @@ function autoCalc(){
   const pnlEl=document.getElementById('j-pnl');
   const rrEl=document.getElementById('j-rr');
   if(!isNaN(entry)&&!isNaN(exit_)&&entry>0&&exit_>0){
-    const raw=isSell?(entry-exit_)*qty:(exit_-entry)*qty;
+    const raw=isSell?(entry-exit_)*qty*leverage:(exit_-entry)*qty*leverage;
     const rounded=Math.round(raw*100)/100;
     pnlEl.value=rounded;
     pnlEl.style.color=rounded>=0?'var(--green)':'var(--red)';
@@ -1208,6 +1237,7 @@ function saveTrade(){
     sl:document.getElementById('j-sl').value,
     tp:document.getElementById('j-tp').value,
     qty:document.getElementById('j-qty').value,
+    leverage:document.getElementById('j-leverage').value||'1',
     pnl,
     rr:document.getElementById('j-rr').value,
     setup:document.getElementById('j-setup').value,
@@ -1224,6 +1254,7 @@ function saveTrade(){
 }
 
 function clearJournal(){
+  document.getElementById('j-leverage').value='1';
   ['j-qty','j-entry','j-exit','j-sl','j-tp','j-pnl','j-rr','j-setup','j-notes'].forEach(id=>{
     const el=document.getElementById(id);el.value='';el.style.color='';
   });
@@ -1592,6 +1623,7 @@ function renderLog(){
           <div class="tc-pnl ${pCls}">${pStr}</div>
           <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
             ${t.qty?`<span class="badge bm">Qty: ${t.qty}</span>`:''}
+            ${t.leverage&&t.leverage!='1'?`<span class="badge" style="background:rgba(37,99,235,.09);color:var(--blue);border:1px solid rgba(37,99,235,.2)">${t.leverage}X</span>`:''}
             ${t.market?`<span class="badge bm">${t.market}</span>`:''}
             ${t.posType?`<span class="badge bm">${t.posType}</span>`:''}
             ${t.direction?`<span class="badge bm">${t.direction}</span>`:''}
@@ -1651,7 +1683,7 @@ function saveDayCharges(){
   const brok=parseFloat(document.getElementById('dc-brokerage').value)||0;
   const chg=parseFloat(document.getElementById('dc-charges').value)||0;
   if(brok===0&&chg===0){showToast('⚠️  Enter at least one charge');return}
-  const entry={brokerage:brok,charges:chg,total:Math.round((brok+chg)*100)/100};
+  const entry={brokerage:brok,charges:chg,total:Math.round((brok+chg)*100)/100,pair:document.getElementById('dc-pair').value.trim(),market:document.getElementById('dc-market').value};
   setSyncStatus('syncing');
   db.collection('users').doc(USER_CODE).collection('charges').doc(date).set(entry)
     .then(()=>{
@@ -1660,6 +1692,8 @@ function saveDayCharges(){
       document.getElementById('dc-charges').value='';
       document.getElementById('dc-total').value='';
       document.getElementById('dc-total').style.color='';
+      document.getElementById('dc-pair').value='';
+      document.getElementById('dc-market').selectedIndex=0;
       renderChargesList();
       setSyncStatus('online');
       showToast('✅  Charges saved for '+date);
@@ -1698,6 +1732,8 @@ function renderChargesList(){
       </div>
       <div class="tc-body">
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          ${d.market?`<span class="badge bm">${d.market}</span>`:''}
+          ${d.pair?`<span class="badge bm">${d.pair.toUpperCase()}</span>`:''}
           <span class="badge bo">Brokerage: ${inr(d.brokerage||0)}</span>
           <span class="badge" style="background:rgba(196,125,0,.09);color:var(--amber);border:1px solid rgba(196,125,0,.2)">Other: ${inr(d.charges||0)}</span>
           <span class="badge bm">Total: ${inr(d.total||0)}</span>
