@@ -643,24 +643,12 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
       </div>
       <!-- Crypto-only fields — shown only when market=Crypto -->
       <div id="crypto-fields" style="display:none">
-        <div style="font-size:.6rem;color:var(--gold);font-family:var(--mono);padding:6px 2px 4px;letter-spacing:.06em;">⚡ CRYPTO FEES (Delta Exchange)</div>
+        <div style="font-size:.6rem;color:var(--gold);font-family:var(--mono);padding:6px 2px 4px;letter-spacing:.06em;">⚡ DELTA EXCHANGE — P&L Breakdown (1 USD = ₹85)</div>
         <div class="frow c4">
-          <div class="field">
-            <div class="flabel">Fee Type</div>
-            <select id="j-fee-type" onchange="autoCalc()">
-              <option value="taker">Taker (0.05% each)</option>
-              <option value="maker">Maker (0.02% each)</option>
-              <option value="manual">Enter manually</option>
-            </select>
-          </div>
-          <div class="field"><div class="flabel">Funding Rate % <span style="font-size:.55rem;color:var(--text3)">(opt)</span></div><input type="number" id="j-funding" placeholder="e.g. 0.01" step="any" oninput="autoCalc()"></div>
-          <div class="field"><div class="flabel">Entry Fee <span style="font-size:.55rem;color:var(--green)">auto</span></div><input type="number" id="j-entry-fee" placeholder="auto" readonly style="background:var(--navy3);border-style:dashed;cursor:default;"></div>
-          <div class="field"><div class="flabel">Exit Fee <span style="font-size:.55rem;color:var(--green)">auto</span></div><input type="number" id="j-exit-fee" placeholder="auto" readonly style="background:var(--navy3);border-style:dashed;cursor:default;"></div>
-        </div>
-        <div class="frow c4">
-          <div class="field"><div class="flabel">Funding Fee <span style="font-size:.55rem;color:var(--green)">auto</span></div><input type="number" id="j-funding-fee" placeholder="auto" readonly style="background:var(--navy3);border-style:dashed;cursor:default;"></div>
-          <div class="field"><div class="flabel">Gross P&L <span style="font-size:.55rem;color:var(--green)">auto</span></div><input type="number" id="j-gross-pnl" placeholder="auto" readonly style="background:var(--navy3);border-style:dashed;cursor:default;"></div>
-          <div class="field" style="grid-column:span 2"><div class="flabel">Net P&L (after fees) <span style="font-size:.55rem;color:var(--gold)">auto</span></div><input type="number" id="j-net-pnl" placeholder="auto" readonly style="background:var(--navy3);border-style:dashed;color:var(--gold);font-weight:600;cursor:default;"></div>
+          <div class="field"><div class="flabel">P&L (USDT) <span style="font-size:.55rem;color:var(--green)">auto</span></div><input type="number" id="j-pnl-usdt" placeholder="auto" readonly style="background:var(--navy3);border-style:dashed;color:var(--green);font-weight:500;cursor:default;"></div>
+          <div class="field"><div class="flabel">P&L (₹) <span style="font-size:.55rem;color:var(--gold)">auto · ×85</span></div><input type="number" id="j-pnl-inr" placeholder="auto" readonly style="background:var(--navy3);border-style:dashed;color:var(--gold);font-weight:600;cursor:default;"></div>
+          <div class="field"><div class="flabel">Contract Size</div><input type="text" id="j-contract-size" placeholder="auto" readonly style="background:var(--navy3);border-style:dashed;cursor:default;color:var(--text3);"></div>
+          <div class="field"><div class="flabel">ΔPrice (Move)</div><input type="number" id="j-delta-price" placeholder="auto" readonly style="background:var(--navy3);border-style:dashed;cursor:default;color:var(--text3);"></div>
         </div>
       </div>
       <div class="frow">
@@ -1201,13 +1189,14 @@ function handlePairSelect(sel){
   else{c.style.display='none';c.value=''}
 }
 
-// ── Detect contract size from pair name ──────────────────────────
+// ── Detect Delta Exchange contract size from pair name ───────────
 function getCryptoContractSize(pair){
   const p=(pair||'').toUpperCase();
-  if(p.includes('BTC')||p.includes('BITCOIN')) return {size:0.001,asset:'BTC'};
-  if(p.includes('ETH')||p.includes('ETHEREUM')) return {size:0.01,asset:'ETH'};
-  return null; // not a recognised crypto pair
+  if(p.includes('BTC')||p.includes('BITCOIN')) return {size:0.001,label:'0.001 BTC/lot'};
+  if(p.includes('ETH')||p.includes('ETHEREUM')) return {size:0.01,label:'0.01 ETH/lot'};
+  return null;
 }
+const USD_TO_INR=85;
 
 function autoCalc(){
   const entry=parseFloat(document.getElementById('j-entry').value);
@@ -1224,7 +1213,7 @@ function autoCalc(){
   const pnlEl=document.getElementById('j-pnl');
   const rrEl=document.getElementById('j-rr');
 
-  // Show/hide crypto fields
+  // Show/hide crypto breakdown panel
   const isCrypto=market==='Crypto';
   document.getElementById('crypto-fields').style.display=isCrypto?'block':'none';
 
@@ -1234,43 +1223,26 @@ function autoCalc(){
     if(isCrypto){
       const contract=getCryptoContractSize(pairVal);
       if(contract){
-        // ── Delta Exchange formula ──────────────────────────────
-        // Gross P&L = Lots × ContractSize × ΔPrice
-        const grossPnl=qty*contract.size*deltaPrice;
+        // ── Delta Exchange: P&L = Lots × ContractSize × ΔPrice ──
+        const pnlUSDT=qty*contract.size*deltaPrice;
+        const pnlINR=Math.round(pnlUSDT*USD_TO_INR*100)/100;
 
-        // Notional = Lots × ContractSize × EntryPrice
-        const notional=qty*contract.size*entry;
+        // Update breakdown fields
+        document.getElementById('j-pnl-usdt').value=pnlUSDT.toFixed(4);
+        document.getElementById('j-pnl-usdt').style.color=pnlUSDT>=0?'var(--green)':'var(--red)';
+        document.getElementById('j-pnl-inr').value=pnlINR.toFixed(2);
+        document.getElementById('j-pnl-inr').style.color=pnlINR>=0?'var(--green)':'var(--red)';
+        document.getElementById('j-contract-size').value=contract.label;
+        document.getElementById('j-delta-price').value=deltaPrice.toFixed(2);
 
-        // Fee rates
-        const feeType=document.getElementById('j-fee-type').value;
-        let feeRate=feeType==='maker'?0.0002:0.0005; // per leg
-        const entryFee=notional*feeRate;
-        const exitFee=notional*feeRate; // approx using entry notional
-
-        // Funding fee
-        const fundingRate=parseFloat(document.getElementById('j-funding').value)||0;
-        const fundingFee=notional*(fundingRate/100);
-
-        // Net P&L
-        const netPnl=grossPnl-entryFee-exitFee-fundingFee;
-
-        // Update crypto fields
-        document.getElementById('j-gross-pnl').value=grossPnl.toFixed(4);
-        document.getElementById('j-entry-fee').value=entryFee.toFixed(4);
-        document.getElementById('j-exit-fee').value=exitFee.toFixed(4);
-        document.getElementById('j-funding-fee').value=fundingFee.toFixed(4);
-        document.getElementById('j-net-pnl').value=netPnl.toFixed(4);
-        document.getElementById('j-net-pnl').style.color=netPnl>=0?'var(--green)':'var(--red)';
-
-        // Main P&L shows net
-        const rounded=Math.round(netPnl*10000)/10000;
-        pnlEl.value=rounded;
-        pnlEl.style.color=rounded>=0?'var(--green)':'var(--red)';
-        if(rounded>0)setOutcome(document.querySelector('.oopt:nth-child(1)'),'WIN','sw');
-        else if(rounded<0)setOutcome(document.querySelector('.oopt:nth-child(2)'),'LOSS','sl');
+        // Main P&L field shows INR value
+        pnlEl.value=pnlINR;
+        pnlEl.style.color=pnlINR>=0?'var(--green)':'var(--red)';
+        if(pnlINR>0)setOutcome(document.querySelector('.oopt:nth-child(1)'),'WIN','sw');
+        else if(pnlINR<0)setOutcome(document.querySelector('.oopt:nth-child(2)'),'LOSS','sl');
         else setOutcome(document.querySelector('.oopt:nth-child(3)'),'BE','sb');
       } else {
-        // Crypto but unknown pair — fallback to standard formula
+        // Crypto but unknown pair — fallback to standard
         const raw=isSell?(entry-exit_)*qty:(exit_-entry)*qty;
         const rounded=Math.round(raw*100)/100;
         pnlEl.value=rounded;
@@ -1278,9 +1250,10 @@ function autoCalc(){
         if(rounded>0)setOutcome(document.querySelector('.oopt:nth-child(1)'),'WIN','sw');
         else if(rounded<0)setOutcome(document.querySelector('.oopt:nth-child(2)'),'LOSS','sl');
         else setOutcome(document.querySelector('.oopt:nth-child(3)'),'BE','sb');
+        ['j-pnl-usdt','j-pnl-inr','j-contract-size','j-delta-price'].forEach(id=>document.getElementById(id).value='');
       }
     } else {
-      // ── Indian market / non-crypto: original formula ──────────
+      // ── Indian markets: (Exit − Entry) × Qty ─────────────────
       const raw=isSell?(entry-exit_)*qty:(exit_-entry)*qty;
       const rounded=Math.round(raw*100)/100;
       pnlEl.value=rounded;
@@ -1291,12 +1264,10 @@ function autoCalc(){
     }
   }else{
     pnlEl.value='';pnlEl.style.color='';
-    if(isCrypto){
-      ['j-gross-pnl','j-entry-fee','j-exit-fee','j-funding-fee','j-net-pnl'].forEach(id=>{
-        document.getElementById(id).value='';
-        document.getElementById(id).style.color='';
-      });
-    }
+    ['j-pnl-usdt','j-pnl-inr','j-contract-size','j-delta-price'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el){el.value='';el.style.color='';}
+    });
   }
 
   if(!isNaN(entry)&&!isNaN(sl)&&!isNaN(tp)&&entry>0&&sl>0&&tp>0){
@@ -1327,11 +1298,7 @@ function saveTrade(){
     tp:document.getElementById('j-tp').value,
     qty:document.getElementById('j-qty').value,
     pnl,
-    grossPnl:parseFloat(document.getElementById('j-gross-pnl').value)||0,
-    netPnl:parseFloat(document.getElementById('j-net-pnl').value)||0,
-    entryFee:parseFloat(document.getElementById('j-entry-fee').value)||0,
-    exitFee:parseFloat(document.getElementById('j-exit-fee').value)||0,
-    fundingFee:parseFloat(document.getElementById('j-funding-fee').value)||0,
+    pnlUSDT:parseFloat(document.getElementById('j-pnl-usdt').value)||0,
     rr:document.getElementById('j-rr').value,
     setup:document.getElementById('j-setup').value,
     outcome,
@@ -1347,7 +1314,7 @@ function saveTrade(){
 }
 
 function clearJournal(){
-  ['j-qty','j-entry','j-exit','j-sl','j-tp','j-pnl','j-rr','j-setup','j-notes','j-funding','j-entry-fee','j-exit-fee','j-funding-fee','j-gross-pnl','j-net-pnl'].forEach(id=>{
+  ['j-qty','j-entry','j-exit','j-sl','j-tp','j-pnl','j-rr','j-setup','j-notes','j-pnl-usdt','j-pnl-inr','j-contract-size','j-delta-price'].forEach(id=>{
     const el=document.getElementById(id);el.value='';el.style.color='';
   });
   document.getElementById('j-pair').selectedIndex=0;
