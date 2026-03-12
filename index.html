@@ -517,7 +517,12 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
       <div class="frow">
         <div class="field">
           <div class="flabel">Pair / Asset <span style="font-size:.55rem;color:var(--text3)">(opt)</span></div>
-          <input type="text" id="dc-pair" placeholder="e.g. NIFTY, BTC/USDT, GOLD…">
+          <select id="dc-pair">
+            <option value="">— Select —</option>
+            <option value="Stock Market">Stock Market</option>
+            <option value="Crypto">Crypto</option>
+            <option value="Gold">Gold</option>
+          </select>
         </div>
       </div>
       <div class="frow c2">
@@ -627,19 +632,6 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
           </select>
         </div>
         <div class="field"><div class="flabel">Quantity / Lots</div><input type="number" id="j-qty" placeholder="e.g. 1, 50, 75" step="any" oninput="autoCalc()"></div>
-        <div class="field">
-          <div class="flabel">Leverage <span style="font-size:.55rem;color:var(--text3)">(opt)</span></div>
-          <select id="j-leverage" onchange="autoCalc()">
-            <option value="1">1X — No Leverage</option>
-            <option value="5">5X</option>
-            <option value="10">10X</option>
-            <option value="25">25X</option>
-            <option value="50">50X</option>
-            <option value="100">100X</option>
-            <option value="150">150X</option>
-            <option value="200">200X</option>
-          </select>
-        </div>
         <div class="field"><div class="flabel">Entry Price</div><input type="number" id="j-entry" placeholder="0.00" step="any" oninput="autoCalc()"></div>
         <div class="field"><div class="flabel">Exit Price</div><input type="number" id="j-exit" placeholder="0.00" step="any" oninput="autoCalc()"></div>
       </div>
@@ -648,6 +640,28 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
         <div class="field"><div class="flabel">Take Profit <span style="font-size:.55rem;color:var(--text3)">(opt)</span></div><input type="number" id="j-tp" placeholder="0.00" step="any" oninput="autoCalc()"></div>
         <div class="field"><div class="flabel">P&L (₹) <span style="font-size:.55rem;color:var(--green)">auto</span></div><input type="number" id="j-pnl" placeholder="auto-calculated" step="any" style="background:var(--navy3);border-style:dashed;color:var(--green);font-weight:500;"></div>
         <div class="field"><div class="flabel">R:R <span style="font-size:.55rem;color:var(--green)">auto</span></div><input type="text" id="j-rr" placeholder="1:2.5"></div>
+      </div>
+      <!-- Crypto-only fields — shown only when market=Crypto -->
+      <div id="crypto-fields" style="display:none">
+        <div style="font-size:.6rem;color:var(--gold);font-family:var(--mono);padding:6px 2px 4px;letter-spacing:.06em;">⚡ CRYPTO FEES (Delta Exchange)</div>
+        <div class="frow c4">
+          <div class="field">
+            <div class="flabel">Fee Type</div>
+            <select id="j-fee-type" onchange="autoCalc()">
+              <option value="taker">Taker (0.05% each)</option>
+              <option value="maker">Maker (0.02% each)</option>
+              <option value="manual">Enter manually</option>
+            </select>
+          </div>
+          <div class="field"><div class="flabel">Funding Rate % <span style="font-size:.55rem;color:var(--text3)">(opt)</span></div><input type="number" id="j-funding" placeholder="e.g. 0.01" step="any" oninput="autoCalc()"></div>
+          <div class="field"><div class="flabel">Entry Fee <span style="font-size:.55rem;color:var(--green)">auto</span></div><input type="number" id="j-entry-fee" placeholder="auto" readonly style="background:var(--navy3);border-style:dashed;cursor:default;"></div>
+          <div class="field"><div class="flabel">Exit Fee <span style="font-size:.55rem;color:var(--green)">auto</span></div><input type="number" id="j-exit-fee" placeholder="auto" readonly style="background:var(--navy3);border-style:dashed;cursor:default;"></div>
+        </div>
+        <div class="frow c4">
+          <div class="field"><div class="flabel">Funding Fee <span style="font-size:.55rem;color:var(--green)">auto</span></div><input type="number" id="j-funding-fee" placeholder="auto" readonly style="background:var(--navy3);border-style:dashed;cursor:default;"></div>
+          <div class="field"><div class="flabel">Gross P&L <span style="font-size:.55rem;color:var(--green)">auto</span></div><input type="number" id="j-gross-pnl" placeholder="auto" readonly style="background:var(--navy3);border-style:dashed;cursor:default;"></div>
+          <div class="field" style="grid-column:span 2"><div class="flabel">Net P&L (after fees) <span style="font-size:.55rem;color:var(--gold)">auto</span></div><input type="number" id="j-net-pnl" placeholder="auto" readonly style="background:var(--navy3);border-style:dashed;color:var(--gold);font-weight:600;cursor:default;"></div>
+        </div>
       </div>
       <div class="frow">
         <div class="field"><div class="flabel">Setup / Strategy</div><input type="text" id="j-setup" placeholder="e.g. S/R Bounce · Breakout · ICT OB · Supply Zone · VWAP Reclaim"></div>
@@ -1187,29 +1201,104 @@ function handlePairSelect(sel){
   else{c.style.display='none';c.value=''}
 }
 
+// ── Detect contract size from pair name ──────────────────────────
+function getCryptoContractSize(pair){
+  const p=(pair||'').toUpperCase();
+  if(p.includes('BTC')||p.includes('BITCOIN')) return {size:0.001,asset:'BTC'};
+  if(p.includes('ETH')||p.includes('ETHEREUM')) return {size:0.01,asset:'ETH'};
+  return null; // not a recognised crypto pair
+}
+
 function autoCalc(){
   const entry=parseFloat(document.getElementById('j-entry').value);
   const exit_=parseFloat(document.getElementById('j-exit').value);
   const sl=parseFloat(document.getElementById('j-sl').value);
   const tp=parseFloat(document.getElementById('j-tp').value);
   const qty=parseFloat(document.getElementById('j-qty').value)||1;
-  const leverage=parseFloat(document.getElementById('j-leverage').value)||1;
-  const dir=document.getElementById('j-dir').value;
   const posType=document.getElementById('j-pos-type').value;
-  // BUY positions (Buy, Buy Call, Buy Put): profit when exit > entry
-  // SELL positions (Sell, Sell Call, Sell Put): profit when entry > exit
+  const market=document.getElementById('j-market').value;
+  const pairSelect=document.getElementById('j-pair').value;
+  const pairCustom=document.getElementById('j-pair-custom').value.trim();
+  const pairVal=(pairSelect==='__custom__'?pairCustom:pairSelect).trim();
   const isSell=posType.startsWith('SELL');
   const pnlEl=document.getElementById('j-pnl');
   const rrEl=document.getElementById('j-rr');
+
+  // Show/hide crypto fields
+  const isCrypto=market==='Crypto';
+  document.getElementById('crypto-fields').style.display=isCrypto?'block':'none';
+
   if(!isNaN(entry)&&!isNaN(exit_)&&entry>0&&exit_>0){
-    const raw=isSell?(entry-exit_)*qty*leverage:(exit_-entry)*qty*leverage;
-    const rounded=Math.round(raw*100)/100;
-    pnlEl.value=rounded;
-    pnlEl.style.color=rounded>=0?'var(--green)':'var(--red)';
-    if(rounded>0)setOutcome(document.querySelector('.oopt:nth-child(1)'),'WIN','sw');
-    else if(rounded<0)setOutcome(document.querySelector('.oopt:nth-child(2)'),'LOSS','sl');
-    else setOutcome(document.querySelector('.oopt:nth-child(3)'),'BE','sb');
-  }else{pnlEl.value='';pnlEl.style.color=''}
+    const deltaPrice=isSell?(entry-exit_):(exit_-entry);
+
+    if(isCrypto){
+      const contract=getCryptoContractSize(pairVal);
+      if(contract){
+        // ── Delta Exchange formula ──────────────────────────────
+        // Gross P&L = Lots × ContractSize × ΔPrice
+        const grossPnl=qty*contract.size*deltaPrice;
+
+        // Notional = Lots × ContractSize × EntryPrice
+        const notional=qty*contract.size*entry;
+
+        // Fee rates
+        const feeType=document.getElementById('j-fee-type').value;
+        let feeRate=feeType==='maker'?0.0002:0.0005; // per leg
+        const entryFee=notional*feeRate;
+        const exitFee=notional*feeRate; // approx using entry notional
+
+        // Funding fee
+        const fundingRate=parseFloat(document.getElementById('j-funding').value)||0;
+        const fundingFee=notional*(fundingRate/100);
+
+        // Net P&L
+        const netPnl=grossPnl-entryFee-exitFee-fundingFee;
+
+        // Update crypto fields
+        document.getElementById('j-gross-pnl').value=grossPnl.toFixed(4);
+        document.getElementById('j-entry-fee').value=entryFee.toFixed(4);
+        document.getElementById('j-exit-fee').value=exitFee.toFixed(4);
+        document.getElementById('j-funding-fee').value=fundingFee.toFixed(4);
+        document.getElementById('j-net-pnl').value=netPnl.toFixed(4);
+        document.getElementById('j-net-pnl').style.color=netPnl>=0?'var(--green)':'var(--red)';
+
+        // Main P&L shows net
+        const rounded=Math.round(netPnl*10000)/10000;
+        pnlEl.value=rounded;
+        pnlEl.style.color=rounded>=0?'var(--green)':'var(--red)';
+        if(rounded>0)setOutcome(document.querySelector('.oopt:nth-child(1)'),'WIN','sw');
+        else if(rounded<0)setOutcome(document.querySelector('.oopt:nth-child(2)'),'LOSS','sl');
+        else setOutcome(document.querySelector('.oopt:nth-child(3)'),'BE','sb');
+      } else {
+        // Crypto but unknown pair — fallback to standard formula
+        const raw=isSell?(entry-exit_)*qty:(exit_-entry)*qty;
+        const rounded=Math.round(raw*100)/100;
+        pnlEl.value=rounded;
+        pnlEl.style.color=rounded>=0?'var(--green)':'var(--red)';
+        if(rounded>0)setOutcome(document.querySelector('.oopt:nth-child(1)'),'WIN','sw');
+        else if(rounded<0)setOutcome(document.querySelector('.oopt:nth-child(2)'),'LOSS','sl');
+        else setOutcome(document.querySelector('.oopt:nth-child(3)'),'BE','sb');
+      }
+    } else {
+      // ── Indian market / non-crypto: original formula ──────────
+      const raw=isSell?(entry-exit_)*qty:(exit_-entry)*qty;
+      const rounded=Math.round(raw*100)/100;
+      pnlEl.value=rounded;
+      pnlEl.style.color=rounded>=0?'var(--green)':'var(--red)';
+      if(rounded>0)setOutcome(document.querySelector('.oopt:nth-child(1)'),'WIN','sw');
+      else if(rounded<0)setOutcome(document.querySelector('.oopt:nth-child(2)'),'LOSS','sl');
+      else setOutcome(document.querySelector('.oopt:nth-child(3)'),'BE','sb');
+    }
+  }else{
+    pnlEl.value='';pnlEl.style.color='';
+    if(isCrypto){
+      ['j-gross-pnl','j-entry-fee','j-exit-fee','j-funding-fee','j-net-pnl'].forEach(id=>{
+        document.getElementById(id).value='';
+        document.getElementById(id).style.color='';
+      });
+    }
+  }
+
   if(!isNaN(entry)&&!isNaN(sl)&&!isNaN(tp)&&entry>0&&sl>0&&tp>0){
     const risk=Math.abs(entry-sl),reward=Math.abs(tp-entry);
     if(risk>0)rrEl.value='1 : '+(reward/risk).toFixed(2);
@@ -1237,8 +1326,12 @@ function saveTrade(){
     sl:document.getElementById('j-sl').value,
     tp:document.getElementById('j-tp').value,
     qty:document.getElementById('j-qty').value,
-    leverage:document.getElementById('j-leverage').value||'1',
     pnl,
+    grossPnl:parseFloat(document.getElementById('j-gross-pnl').value)||0,
+    netPnl:parseFloat(document.getElementById('j-net-pnl').value)||0,
+    entryFee:parseFloat(document.getElementById('j-entry-fee').value)||0,
+    exitFee:parseFloat(document.getElementById('j-exit-fee').value)||0,
+    fundingFee:parseFloat(document.getElementById('j-funding-fee').value)||0,
     rr:document.getElementById('j-rr').value,
     setup:document.getElementById('j-setup').value,
     outcome,
@@ -1254,8 +1347,7 @@ function saveTrade(){
 }
 
 function clearJournal(){
-  document.getElementById('j-leverage').value='1';
-  ['j-qty','j-entry','j-exit','j-sl','j-tp','j-pnl','j-rr','j-setup','j-notes'].forEach(id=>{
+  ['j-qty','j-entry','j-exit','j-sl','j-tp','j-pnl','j-rr','j-setup','j-notes','j-funding','j-entry-fee','j-exit-fee','j-funding-fee','j-gross-pnl','j-net-pnl'].forEach(id=>{
     const el=document.getElementById(id);el.value='';el.style.color='';
   });
   document.getElementById('j-pair').selectedIndex=0;
@@ -1623,7 +1715,6 @@ function renderLog(){
           <div class="tc-pnl ${pCls}">${pStr}</div>
           <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
             ${t.qty?`<span class="badge bm">Qty: ${t.qty}</span>`:''}
-            ${t.leverage&&t.leverage!='1'?`<span class="badge" style="background:rgba(37,99,235,.09);color:var(--blue);border:1px solid rgba(37,99,235,.2)">${t.leverage}X</span>`:''}
             ${t.market?`<span class="badge bm">${t.market}</span>`:''}
             ${t.posType?`<span class="badge bm">${t.posType}</span>`:''}
             ${t.direction?`<span class="badge bm">${t.direction}</span>`:''}
@@ -1692,7 +1783,7 @@ function saveDayCharges(){
       document.getElementById('dc-charges').value='';
       document.getElementById('dc-total').value='';
       document.getElementById('dc-total').style.color='';
-      document.getElementById('dc-pair').value='';
+      document.getElementById('dc-pair').selectedIndex=0;
       document.getElementById('dc-market').selectedIndex=0;
       renderChargesList();
       setSyncStatus('online');
