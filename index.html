@@ -1347,7 +1347,7 @@ async function loadAllData(){
     ]);
     _tradesCache = tSnap.docs.map(d=>d.data());
     _chargesCache = {};
-    cSnap.docs.forEach(d=>{ _chargesCache[d.id] = d.data(); });
+    cSnap.docs.forEach(d=>{ const data=d.data(); if(!data.id) data.id=d.id; if(!data.date) data.date=d.id; _chargesCache[d.id]=data; });
     setSyncStatus('online');
     renderHistory();
   }catch(e){
