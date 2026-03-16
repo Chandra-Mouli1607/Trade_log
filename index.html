@@ -1744,11 +1744,12 @@ function saveDayCharges(){
   const brok=parseFloat(document.getElementById('dc-brokerage').value)||0;
   const chg=parseFloat(document.getElementById('dc-charges').value)||0;
   if(brok===0&&chg===0){showToast('⚠️  Enter at least one charge');return}
-  const entry={brokerage:brok,charges:chg,total:Math.round((brok+chg)*100)/100,pair:document.getElementById('dc-pair').value.trim(),market:document.getElementById('dc-market').value};
+  const id=String(Date.now());
+  const entry={id,date,brokerage:brok,charges:chg,total:Math.round((brok+chg)*100)/100,pair:document.getElementById('dc-pair').value.trim(),market:document.getElementById('dc-market').value};
   setSyncStatus('syncing');
-  db.collection('users').doc(USER_CODE).collection('charges').doc(date).set(entry)
+  db.collection('users').doc(USER_CODE).collection('charges').doc(id).set(entry)
     .then(()=>{
-      _chargesCache[date]=entry;
+      _chargesCache[id]=entry;
       document.getElementById('dc-brokerage').value='';
       document.getElementById('dc-charges').value='';
       document.getElementById('dc-total').value='';
@@ -1762,10 +1763,10 @@ function saveDayCharges(){
     .catch(()=>{ setSyncStatus('error'); showToast('⚠️  Save failed — check connection'); });
 }
 
-function deleteDayCharges(date){
+function deleteDayCharges(id){
   setSyncStatus('syncing');
-  db.collection('users').doc(USER_CODE).collection('charges').doc(date).delete()
-    .then(()=>{ delete _chargesCache[date]; renderChargesList(); setSyncStatus('online'); showToast('Charges removed for '+date); })
+  db.collection('users').doc(USER_CODE).collection('charges').doc(id).delete()
+    .then(()=>{ delete _chargesCache[id]; renderChargesList(); setSyncStatus('online'); showToast('✅  Entry deleted'); })
     .catch(()=>showToast('⚠️  Delete failed — check connection'));
 }
 
@@ -1773,19 +1774,23 @@ function renderChargesList(){
   const data=getDayCharges();
   const list=document.getElementById('charges-list');
   if(!list)return;
-  const keys=Object.keys(data).sort((a,b)=>b.localeCompare(a));
-  if(!keys.length){
+  const entries=Object.values(data).sort((a,b)=>{
+    // sort by date desc, then by id desc within same day
+    if(b.date!==a.date) return (b.date||'').localeCompare(a.date||'');
+    return (b.id||'').localeCompare(a.id||'');
+  });
+  if(!entries.length){
     list.innerHTML='<div class="empty"><div class="empty-icon">💸</div><div class="empty-title">No charges entered yet</div><div class="empty-sub">Enter brokerage and charges for this day</div></div>';
     return;
   }
-  list.innerHTML=keys.map(date=>{
-    const d=data[date];
-    const label=new Date(date+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+  list.innerHTML=entries.map(d=>{
+    const dateKey=d.date||d.id;
+    const label=new Date(dateKey+'T00:00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
     return`<div class="tcard">
       <div class="tc-head">
         <div>
           <div class="tc-pair" style="font-size:.9rem">📅 ${label}</div>
-          <div class="tc-meta">${date}</div>
+          <div class="tc-meta">${dateKey}</div>
         </div>
         <div class="tc-right">
           <div class="tc-pnl kv-orange">-${inr(d.total||0)}</div>
@@ -1799,7 +1804,7 @@ function renderChargesList(){
           <span class="badge" style="background:rgba(196,125,0,.09);color:var(--amber);border:1px solid rgba(196,125,0,.2)">Other: ${inr(d.charges||0)}</span>
           <span class="badge bm">Total: ${inr(d.total||0)}</span>
         </div>
-        <div class="tc-actions"><button class="del-btn" onclick="deleteDayCharges('${date}')">Delete Entry</button></div>
+        <div class="tc-actions"><button class="del-btn" onclick="deleteDayCharges('${d.id||dateKey}')">Delete Entry</button></div>
       </div>
     </div>`;
   }).join('');
@@ -1808,21 +1813,29 @@ function renderChargesList(){
 // ── HELPER: get charges for a date range ──────────────────────────
 function getChargesForMonth(year, month){
   const data=getDayCharges();
-  let totalBrok=0,totalChg=0,days=0;
-  Object.keys(data).forEach(date=>{
-    const d=new Date(date+'T00:00:00');
+  let totalBrok=0,totalChg=0,days=new Set();
+  Object.values(data).forEach(entry=>{
+    const dateStr=entry.date||entry.id;
+    const d=new Date(dateStr+'T00:00:00');
     if(d.getFullYear()===year&&d.getMonth()===month){
-      totalBrok+=data[date].brokerage||0;
-      totalChg+=data[date].charges||0;
-      days++;
+      totalBrok+=entry.brokerage||0;
+      totalChg+=entry.charges||0;
+      days.add(dateStr);
     }
   });
-  return{brokerage:Math.round(totalBrok*100)/100,charges:Math.round(totalChg*100)/100,total:Math.round((totalBrok+totalChg)*100)/100,days};
+  return{brokerage:Math.round(totalBrok*100)/100,charges:Math.round(totalChg*100)/100,total:Math.round((totalBrok+totalChg)*100)/100,days:days.size};
 }
 
 function getChargesForDate(date){
   const data=getDayCharges();
-  return data[date]||{brokerage:0,charges:0,total:0};
+  let totalBrok=0,totalChg=0;
+  Object.values(data).forEach(entry=>{
+    if((entry.date||entry.id)===date){
+      totalBrok+=entry.brokerage||0;
+      totalChg+=entry.charges||0;
+    }
+  });
+  return{brokerage:Math.round(totalBrok*100)/100,charges:Math.round(totalChg*100)/100,total:Math.round((totalBrok+totalChg)*100)/100};
 }
 
 function getAllCharges(){
