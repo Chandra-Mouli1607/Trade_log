@@ -1194,6 +1194,9 @@ function getCryptoContractSize(pair){
   const p=(pair||'').toUpperCase();
   if(p.includes('BTC')||p.includes('BITCOIN')) return {size:0.001,label:'0.001 BTC/lot'};
   if(p.includes('ETH')||p.includes('ETHEREUM')) return {size:0.01,label:'0.01 ETH/lot'};
+  if(p.includes('RIVER'))  return {size:1,label:'1 RIVER/lot'};
+  if(p.includes('SOL'))    return {size:1,label:'1 SOL/lot'};
+  if(p.includes('XRP'))    return {size:1,label:'1 XRP/lot'};
   return null;
 }
 const USD_TO_INR=85;
