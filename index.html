@@ -1376,7 +1376,9 @@ function renderDashboard(){
   if(!trades.length){setKPIs(0,0,0,0,null,null,{type:'',val:0},0,0,0,0,0,0);renderEmptyCharts();renderTodayCharges([]);renderAllTimeLoss([]);return}
 
   const sorted=[...trades].sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const totalPnl=trades.reduce((s,t)=>s+(t.pnl||0),0);
+  const grossPnl=trades.reduce((s,t)=>s+(t.pnl||0),0);
+  const allCharges=getAllCharges();
+  const totalPnl=Math.round((grossPnl-allCharges.total)*100)/100; // net after all charges
   const wins=trades.filter(t=>t.outcome==='WIN');
   const losses=trades.filter(t=>t.outcome==='LOSS');
   const bes=trades.filter(t=>t.outcome==='BE');
@@ -1388,7 +1390,7 @@ function renderDashboard(){
   const pf=grossLoss>0?(grossWin/grossLoss):grossWin>0?99:0;
   const {cur,bestWin,worstLoss}=calcStreaks(sorted);
 
-  setKPIs(totalPnl,wr,trades.length,totalPnl/trades.length,bestT,worstT,cur,pf,wins.length,losses.length,bes.length,bestWin,worstLoss);
+  setKPIs(totalPnl,wr,trades.length,grossPnl/trades.length,bestT,worstT,cur,pf,wins.length,losses.length,bes.length,bestWin,worstLoss);
 
   let running=0;
   const eqLabels=sorted.map(t=>new Date(t.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'}));
@@ -1524,7 +1526,7 @@ function setKPIs(pnl,wr,total,avg,bestT,worstT,cur,pf,wins,losses,bes,bestWin,wo
   const pe=document.getElementById('k-pnl');
   pe.textContent=(pnl>=0?'+':'')+inr(pnl);
   pe.className='kpi-val '+(pnl>0?'kv-pos':pnl<0?'kv-neg':'');
-  document.getElementById('k-pnl-sub').textContent=total?`From ${total} trades`:'No trades yet';
+  document.getElementById('k-pnl-sub').textContent=total?`From ${total} trades (after charges)`:'No trades yet';
   document.getElementById('k-wr').textContent=wr+'%';
   document.getElementById('k-wr-sub').textContent=wins+'W · '+losses+'L · '+bes+'BE';
   document.getElementById('k-trades').textContent=total;
