@@ -653,6 +653,16 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
           <div class="field"><div class="flabel">ΔPrice (Move)</div><input type="number" id="j-delta-price" placeholder="auto" readonly style="background:var(--navy3);border-style:dashed;cursor:default;color:var(--text3);"></div>
         </div>
       </div>
+      <!-- Gold-only fields — shown only when market=Gold -->
+      <div id="gold-fields" style="display:none">
+        <div style="font-size:.6rem;color:var(--gold);font-family:var(--mono);padding:6px 2px 4px;letter-spacing:.06em;">🥇 GOLD — P&L Breakdown (1 USD = ₹85)</div>
+        <div class="frow c4">
+          <div class="field"><div class="flabel">P&L (USD) <span style="font-size:.55rem;color:var(--green)">auto</span></div><input type="number" id="j-gold-usd" placeholder="auto" readonly style="background:var(--navy3);border-style:dashed;color:var(--green);font-weight:500;cursor:default;"></div>
+          <div class="field"><div class="flabel">P&L (₹) <span style="font-size:.55rem;color:var(--gold)">auto · ×85</span></div><input type="number" id="j-gold-inr" placeholder="auto" readonly style="background:var(--navy3);border-style:dashed;color:var(--gold);font-weight:600;cursor:default;"></div>
+          <div class="field"><div class="flabel">ΔPrice (Move)</div><input type="number" id="j-gold-delta" placeholder="auto" readonly style="background:var(--navy3);border-style:dashed;cursor:default;color:var(--text3);"></div>
+          <div class="field"><div class="flabel">Notional (Lots×100)</div><input type="text" id="j-gold-notional" placeholder="auto" readonly style="background:var(--navy3);border-style:dashed;cursor:default;color:var(--text3);"></div>
+        </div>
+      </div>
       <div class="frow">
         <div class="field"><div class="flabel">Setup / Strategy</div><input type="text" id="j-setup" placeholder="e.g. S/R Bounce · Breakout · ICT OB · Supply Zone · VWAP Reclaim"></div>
       </div>
@@ -1221,6 +1231,7 @@ function autoCalc(){
   // Show/hide crypto breakdown panel
   const isCrypto=market==='Crypto';
   document.getElementById('crypto-fields').style.display=isCrypto?'block':'none';
+  document.getElementById('gold-fields').style.display='none'; // reset; gold branch will show if needed
 
   if(!isNaN(entry)&&!isNaN(exit_)&&entry>0&&exit_>0){
     const deltaPrice=isSell?(entry-exit_):(exit_-entry);
@@ -1257,13 +1268,31 @@ function autoCalc(){
         else setOutcome(document.querySelector('.oopt:nth-child(3)'),'BE','sb');
         ['j-pnl-usdt','j-pnl-inr','j-contract-size','j-delta-price'].forEach(id=>document.getElementById(id).value='');
       }
+    } else if(market==='Gold'){
+      // ── Gold: Lots × ΔPrice × 100 (USD) → ×85 = ₹ ──────────
+      document.getElementById('gold-fields').style.display='block';
+      const deltaPrice=isSell?(entry-exit_):(exit_-entry);
+      const pnlUSD=qty*deltaPrice*100;
+      const pnlINR=Math.round(pnlUSD*USD_TO_INR*100)/100;
+      const pnlUSDr=Math.round(pnlUSD*100)/100;
+
+      document.getElementById('j-gold-usd').value=pnlUSDr.toFixed(2);
+      document.getElementById('j-gold-usd').style.color=pnlUSD>=0?'var(--green)':'var(--red)';
+      document.getElementById('j-gold-inr').value=pnlINR.toFixed(2);
+      document.getElementById('j-gold-inr').style.color=pnlINR>=0?'var(--green)':'var(--red)';
+      document.getElementById('j-gold-delta').value=deltaPrice.toFixed(2);
+      document.getElementById('j-gold-notional').value=(qty*100).toFixed(2);
+
+      // Main P&L stores INR value
+      pnlEl.value=pnlINR;
+      pnlEl.style.color=pnlINR>=0?'var(--green)':'var(--red)';
+      if(pnlINR>0)setOutcome(document.querySelector('.oopt:nth-child(1)'),'WIN','sw');
+      else if(pnlINR<0)setOutcome(document.querySelector('.oopt:nth-child(2)'),'LOSS','sl');
+      else setOutcome(document.querySelector('.oopt:nth-child(3)'),'BE','sb');
     } else {
-      // ── Gold: Lots × ΔPrice × 100 ────────────────────────────
       // ── Indian markets: (Exit − Entry) × Qty ─────────────────
-      const isGold=market==='Gold';
-      const raw=isGold
-        ? (isSell?(entry-exit_):(exit_-entry))*qty*100
-        : (isSell?(entry-exit_)*qty:(exit_-entry)*qty);
+      document.getElementById('gold-fields').style.display='none';
+      const raw=isSell?(entry-exit_)*qty:(exit_-entry)*qty;
       const rounded=Math.round(raw*100)/100;
       pnlEl.value=rounded;
       pnlEl.style.color=rounded>=0?'var(--green)':'var(--red)';
@@ -1273,7 +1302,7 @@ function autoCalc(){
     }
   }else{
     pnlEl.value='';pnlEl.style.color='';
-    ['j-pnl-usdt','j-pnl-inr','j-contract-size','j-delta-price'].forEach(id=>{
+    ['j-pnl-usdt','j-pnl-inr','j-contract-size','j-delta-price','j-gold-usd','j-gold-inr','j-gold-delta','j-gold-notional'].forEach(id=>{
       const el=document.getElementById(id);
       if(el){el.value='';el.style.color='';}
     });
@@ -1308,6 +1337,7 @@ function saveTrade(){
     qty:document.getElementById('j-qty').value,
     pnl,
     pnlUSDT:parseFloat(document.getElementById('j-pnl-usdt').value)||0,
+    pnlUSD:parseFloat(document.getElementById('j-gold-usd').value)||0,
     rr:document.getElementById('j-rr').value,
     setup:document.getElementById('j-setup').value,
     outcome,
@@ -1323,7 +1353,7 @@ function saveTrade(){
 }
 
 function clearJournal(){
-  ['j-qty','j-entry','j-exit','j-sl','j-tp','j-pnl','j-rr','j-setup','j-notes','j-pnl-usdt','j-pnl-inr','j-contract-size','j-delta-price'].forEach(id=>{
+  ['j-qty','j-entry','j-exit','j-sl','j-tp','j-pnl','j-rr','j-setup','j-notes','j-pnl-usdt','j-pnl-inr','j-contract-size','j-delta-price','j-gold-usd','j-gold-inr','j-gold-delta','j-gold-notional'].forEach(id=>{
     const el=document.getElementById(id);el.value='';el.style.color='';
   });
   document.getElementById('j-pair').selectedIndex=0;
