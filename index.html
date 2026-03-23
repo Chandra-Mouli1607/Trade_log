@@ -583,6 +583,9 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
               <option value="XRP/USDT">XRP/USDT</option><option value="ADA/USDT">ADA/USDT</option>
               <option value="DOGE/USDT">DOGE/USDT</option><option value="MATIC/USDT">MATIC/USDT</option><option value="RIVERUSD">RIVERUSD</option>
             </optgroup>
+            <optgroup label="🥇 Gold">
+              <option value="XAU/USD">XAU/USD (Gold)</option>
+            </optgroup>
             <optgroup label="📈 Indian Stocks (NSE)">
               <option value="RELIANCE">RELIANCE</option><option value="TCS">TCS</option>
               <option value="HDFCBANK">HDFCBANK</option><option value="ICICIBANK">ICICIBANK</option>
@@ -601,7 +604,6 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
               <option value="GBP/JPY">GBP/JPY</option><option value="AUD/USD">AUD/USD</option>
               <option value="USD/CAD">USD/CAD</option><option value="EUR/JPY">EUR/JPY</option>
               <option value="NZD/USD">NZD/USD</option><option value="EUR/GBP">EUR/GBP</option>
-              <option value="XAU/USD">XAU/USD (Gold)</option>
             </optgroup>
             <optgroup label="✏️ Custom">
               <option value="__custom__">Type custom pair…</option>
@@ -1256,8 +1258,12 @@ function autoCalc(){
         ['j-pnl-usdt','j-pnl-inr','j-contract-size','j-delta-price'].forEach(id=>document.getElementById(id).value='');
       }
     } else {
+      // ── Gold: Lots × ΔPrice × 100 ────────────────────────────
       // ── Indian markets: (Exit − Entry) × Qty ─────────────────
-      const raw=isSell?(entry-exit_)*qty:(exit_-entry)*qty;
+      const isGold=market==='Gold';
+      const raw=isGold
+        ? (isSell?(entry-exit_):(exit_-entry))*qty*100
+        : (isSell?(entry-exit_)*qty:(exit_-entry)*qty);
       const rounded=Math.round(raw*100)/100;
       pnlEl.value=rounded;
       pnlEl.style.color=rounded>=0?'var(--green)':'var(--red)';
