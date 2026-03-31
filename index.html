@@ -952,6 +952,31 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
         <div class="legend-item"><div class="legend-dot" style="background:var(--navy3)"></div><span style="font-size:.6rem;color:var(--text3)">No trade</span></div>
       </div>
     </div>
+    <!-- CHARGES BY CATEGORY + P&L BY MARKET -->
+    <div class="slabel" style="margin-top:14px">Market Breakdown</div>
+    <div class="donut-row">
+      <div class="donut-card">
+        <div class="donut-title">Charges by Category</div>
+        <div class="donut-wrap">
+          <canvas id="chart-charges-pie"></canvas>
+          <div class="donut-center"><div class="donut-pct" style="font-size:.7rem;color:var(--text2)" id="charges-pie-center">—</div></div>
+        </div>
+        <div class="legend" id="charges-pie-legend"></div>
+      </div>
+      <div class="donut-card">
+        <div class="donut-title">P&L by Market</div>
+        <div class="donut-wrap">
+          <canvas id="chart-market-pie"></canvas>
+          <div class="donut-center"><div class="donut-pct" style="font-size:.7rem;color:var(--text2)" id="market-pie-center">—</div></div>
+        </div>
+        <div class="legend" id="market-pie-legend"></div>
+      </div>
+    </div>
+    <div class="chart-card" style="margin-top:12px">
+      <div class="chart-title">P&L by Market — Bar View</div>
+      <div class="chart-wrap" style="height:160px"><canvas id="chart-market-bar"></canvas></div>
+    </div>
+
   </div><!-- end dashboard -->
 
   <!-- ── MONTHLY SUB ── -->
@@ -1445,6 +1470,94 @@ function renderDashboard(){
 
   // All-time loss breakdown
   renderAllTimeLoss(trades);
+  renderChargesPie();
+  renderMarketCharts(trades);
+}
+
+// ── Charges by Category pie ───────────────────────────────────────
+function renderChargesPie(){
+  destroyChart('charges-pie');
+  const data=getDayCharges();
+  // Group by market field; default to "Other" if missing
+  const map={};
+  Object.values(data).forEach(entry=>{
+    const cat=entry.market||'Other';
+    map[cat]=(map[cat]||0)+(entry.total||0);
+  });
+  const labels=Object.keys(map);
+  const vals=labels.map(k=>Math.round(map[k]*100)/100);
+  const total=vals.reduce((s,v)=>s+v,0);
+  const COLORS=['rgba(37,99,235,.75)','rgba(201,168,76,.75)','rgba(0,201,167,.75)','rgba(255,95,109,.75)','rgba(168,85,247,.75)','rgba(251,146,60,.75)'];
+  const BORDERS=['#2563eb','#c9a84c','#00c9a7','#ff5f6d','#a855f7','#fb923c'];
+  const ctx=document.getElementById('chart-charges-pie');
+  if(!ctx)return;
+  document.getElementById('charges-pie-center').textContent=labels.length?inr(total):'₹0';
+  chartInstances['charges-pie']=new Chart(ctx,{
+    type:'doughnut',
+    data:{labels,datasets:[{data:vals.length?vals:[1],backgroundColor:vals.length?COLORS.slice(0,vals.length):['rgba(255,255,255,.05)'],borderColor:vals.length?BORDERS.slice(0,vals.length):['transparent'],borderWidth:1.5}]},
+    options:{responsive:true,maintainAspectRatio:true,cutout:'68%',plugins:{legend:{display:false},tooltip:{enabled:vals.length>0,callbacks:{label:c=>c.label+': '+inr(c.parsed)}}}}
+  });
+  const leg=document.getElementById('charges-pie-legend');
+  if(leg) leg.innerHTML=labels.map((l,i)=>`<div class="legend-item"><div class="legend-dot" style="background:${COLORS[i]}"></div><span>${l}: ${inr(vals[i])}</span></div>`).join('');
+}
+
+// ── P&L by Market pie + bar ────────────────────────────────────────
+function normaliseMarket(m){
+  if(!m) return 'Other';
+  const u=m.toUpperCase();
+  if(u.includes('CRYPTO')) return 'Crypto';
+  if(u.includes('GOLD')||u.includes('XAU')) return 'Forex'; // gold under Forex
+  if(u.includes('STOCK')||u.includes('NSE')) return 'Stocks';
+  if(u.includes('INDIC')||u.includes('NIFTY')||u.includes('SENSEX')) return 'Indices';
+  if(u.includes('FOREX')||u.includes('CURRENCY')) return 'Forex';
+  if(u.includes('FUTURES')) return 'Futures';
+  if(u.includes('OPTIONS')) return 'Options';
+  return m; // keep as-is for custom
+}
+
+function renderMarketCharts(trades){
+  destroyChart('market-pie');
+  destroyChart('market-bar');
+  // Aggregate P&L per normalised market
+  const map={};
+  trades.forEach(t=>{
+    const mkt=normaliseMarket(t.market);
+    map[mkt]=(map[mkt]||0)+(t.pnl||0);
+  });
+  // Round
+  Object.keys(map).forEach(k=>map[k]=Math.round(map[k]*100)/100);
+  const labels=Object.keys(map);
+  const vals=labels.map(k=>map[k]);
+
+  const PIE_COLORS=labels.map(v=>v==='Crypto'?'rgba(201,168,76,.75)':v==='Stocks'?'rgba(37,99,235,.75)':v==='Indices'?'rgba(0,201,167,.75)':v==='Forex'?'rgba(168,85,247,.75)':'rgba(251,146,60,.75)');
+  const PIE_BORDERS=labels.map(v=>v==='Crypto'?'#c9a84c':v==='Stocks'?'#2563eb':v==='Indices'?'#00c9a7':v==='Forex'?'#a855f7':'#fb923c');
+
+  // Pie — absolute values for size, colour shows profit/loss
+  const absVals=vals.map(Math.abs);
+  const ctxPie=document.getElementById('chart-market-pie');
+  if(ctxPie){
+    const netTotal=vals.reduce((s,v)=>s+v,0);
+    document.getElementById('market-pie-center').textContent=labels.length?(netTotal>=0?'+':'')+inr(netTotal):'₹0';
+    chartInstances['market-pie']=new Chart(ctxPie,{
+      type:'doughnut',
+      data:{labels,datasets:[{data:absVals.length?absVals:[1],backgroundColor:absVals.length?PIE_COLORS:['rgba(255,255,255,.05)'],borderColor:absVals.length?PIE_BORDERS:['transparent'],borderWidth:1.5}]},
+      options:{responsive:true,maintainAspectRatio:true,cutout:'68%',plugins:{legend:{display:false},tooltip:{enabled:absVals.length>0,callbacks:{label:c=>{const v=vals[c.dataIndex];return c.label+': '+(v>=0?'+':'')+inr(v);}}}}},
+    });
+    const leg=document.getElementById('market-pie-legend');
+    if(leg) leg.innerHTML=labels.map((l,i)=>`<div class="legend-item"><div class="legend-dot" style="background:${PIE_COLORS[i]}"></div><span>${l}: <span style="color:${vals[i]>=0?'var(--green)':'var(--red)'}">${(vals[i]>=0?'+':'')+inr(vals[i])}</span></span></div>`).join('');
+  }
+
+  // Bar
+  const ctxBar=document.getElementById('chart-market-bar');
+  if(ctxBar){
+    const barColors=vals.map(v=>v>=0?'rgba(0,201,167,.75)':'rgba(255,95,109,.75)');
+    const barBorders=vals.map(v=>v>=0?'#00c9a7':'#ff5f6d');
+    chartInstances['market-bar']=new Chart(ctxBar,{
+      type:'bar',
+      data:{labels,datasets:[{data:vals,backgroundColor:barColors,borderColor:barBorders,borderWidth:1.5,borderRadius:5}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>(c.parsed.y>=0?'+':'')+inr(c.parsed.y)}}},scales:{x:{grid:{display:false},ticks:{color:'rgba(255,255,255,.5)'}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{callback:v=>inr(v),color:'rgba(255,255,255,.5)'}}}}
+    });
+  }
 }
 
 function renderTodayCharges(todayTrades){
@@ -1684,7 +1797,7 @@ function renderCalendar(trades, gridId, monthId){
 }
 
 function renderEmptyCharts(){
-  ['equity','donut','entry-donut','bar'].forEach(id=>destroyChart(id));
+  ['equity','donut','entry-donut','bar','charges-pie','market-pie','market-bar'].forEach(id=>destroyChart(id));
   document.getElementById('emotion-breakdown').innerHTML='<div style="font-family:var(--mono);font-size:.65rem;color:var(--text3)">No data yet</div>';
   renderCalendar([],'cal-grid','cal-month');
 }
