@@ -338,6 +338,109 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
 
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#d0d6e4;border-radius:4px}
 
+/* ═══ INTERACTIVITY ENHANCEMENTS ═══ */
+
+/* Ripple effect */
+.ripple-host{position:relative;overflow:hidden}
+.ripple{position:absolute;border-radius:50%;background:rgba(201,168,76,.18);transform:scale(0);animation:rippleAnim .55s linear;pointer-events:none}
+@keyframes rippleAnim{to{transform:scale(4);opacity:0}}
+
+/* KPI cards — lift on hover */
+.kpi{cursor:default;transition:border-color .2s,transform .22s,box-shadow .22s}
+.kpi:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.08);border-color:var(--gold)!important}
+.kpi:active{transform:translateY(-1px)}
+
+/* Trade cards — interactive */
+.tcard{transition:border-color .2s,transform .22s,box-shadow .22s;cursor:pointer}
+.tcard:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.07);border-color:var(--border2)}
+.tcard.expanded .tc-body{animation:slideDown .2s ease}
+@keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+
+/* Chart cards — subtle lift */
+.chart-card{transition:border-color .2s,transform .18s}
+.chart-card:hover{border-color:var(--border2)}
+
+/* Donut cards */
+.donut-card{transition:border-color .2s,transform .18s}
+.donut-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+
+/* Nav tab indicator slide */
+.nav{position:relative}
+.nav-indicator{position:absolute;bottom:0;height:2px;background:var(--gold);transition:left .25s cubic-bezier(.4,0,.2,1),width .25s cubic-bezier(.4,0,.2,1);border-radius:2px 2px 0 0}
+
+/* Tab switch animation */
+.panel{animation:panelIn .3s cubic-bezier(.4,0,.2,1)}
+@keyframes panelIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.hsub.active{animation:panelIn .25s ease}
+
+/* Save button pulse on hover */
+.save-btn{transition:all .22s;position:relative;overflow:hidden}
+.save-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,.15));opacity:0;transition:opacity .2s}
+.save-btn:hover::after{opacity:1}
+
+/* Input focus glow */
+input:focus,select:focus,textarea:focus{
+  border-color:var(--gold);
+  box-shadow:0 0 0 3px rgba(201,168,76,.1),0 2px 8px rgba(0,0,0,.06);
+  transform:translateY(-1px);
+  transition:all .18s
+}
+
+/* Checklist item hover */
+.ci{transition:background .15s,transform .1s}
+.ci:hover{background:rgba(201,168,76,.04)!important;transform:translateX(2px)}
+.ci.done{transform:none}
+
+/* Badge hover */
+.badge{transition:transform .15s,box-shadow .15s;cursor:default}
+.badge:hover{transform:scale(1.06);box-shadow:0 2px 8px rgba(0,0,0,.1)}
+
+/* Outcome options */
+.oopt{transition:all .2s cubic-bezier(.4,0,.2,1)}
+.oopt:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.oopt:active{transform:scale(.97)}
+
+/* Delete button */
+.del-btn{transition:all .2s}
+.del-btn:hover{transform:translateY(-1px)}
+
+/* KPI stagger animation on load */
+.kpi:nth-child(1){animation:kpiIn .4s .05s both}
+.kpi:nth-child(2){animation:kpiIn .4s .1s both}
+.kpi:nth-child(3){animation:kpiIn .4s .15s both}
+.kpi:nth-child(4){animation:kpiIn .4s .2s both}
+.kpi:nth-child(5){animation:kpiIn .4s .25s both}
+.kpi:nth-child(6){animation:kpiIn .4s .3s both}
+@keyframes kpiIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+/* Chart click filter badge */
+.filter-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:var(--gold3);border:1px solid rgba(201,168,76,.3);border-radius:20px;font-family:var(--mono);font-size:.63rem;color:var(--gold);cursor:pointer;transition:all .2s;margin-bottom:10px}
+.filter-badge:hover{background:rgba(201,168,76,.15)}
+.filter-badge .fb-x{font-size:.8rem;line-height:1}
+
+/* Drag-and-drop trade cards */
+.tcard.dragging{opacity:.45;transform:scale(.98);border-color:var(--gold)!important;box-shadow:0 12px 40px rgba(201,168,76,.2)}
+.tcard.drag-over{border-color:var(--gold)!important;border-style:dashed!important;background:rgba(201,168,76,.04)}
+
+/* Scroll-to-top button */
+.scroll-top{position:fixed;bottom:90px;right:16px;width:38px;height:38px;background:var(--navy2);border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:100;opacity:0;transform:translateY(10px);transition:all .25s;box-shadow:0 4px 16px rgba(0,0,0,.1);font-size:.8rem;color:var(--text2)}
+.scroll-top.visible{opacity:1;transform:translateY(0)}
+.scroll-top:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-2px)}
+
+/* Tooltip */
+[data-tip]{position:relative}
+[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--text);color:var(--navy);font-family:var(--mono);font-size:.6rem;padding:4px 9px;border-radius:6px;white-space:nowrap;z-index:999;pointer-events:none;letter-spacing:.04em}
+[data-tip]:hover::before{content:'';position:absolute;bottom:calc(100% + 1px);left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:var(--text);z-index:999;pointer-events:none}
+
+/* Charges card hover */
+.charge-item{transition:background .15s}
+.charge-item:hover{background:rgba(201,168,76,.04)}
+
+/* Slider for month */
+.month-nav-btn{transition:all .2s;border-radius:8px;padding:6px 10px;background:var(--navy3);border:1px solid var(--border);cursor:pointer;color:var(--text2);font-size:.8rem}
+.month-nav-btn:hover{border-color:var(--gold);color:var(--gold);background:var(--gold3)}
+.month-nav-btn:active{transform:scale(.94)}
+
 @media(max-width:500px){
   .hdr{padding:0 14px}.nav{padding:0 6px}
   .ntab{padding:0 12px;font-size:.71rem}.panel{padding:14px 12px 100px}
@@ -382,6 +485,8 @@ textarea{resize:vertical;min-height:110px;line-height:1.6}
     </div>
   </div>
 </div>
+
+<div class="scroll-top" id="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">↑</div>
 
 <header class="hdr">
   <div class="logo-mark">
@@ -1995,6 +2100,332 @@ function getAllCharges(){
   Object.values(data).forEach(d=>{totalBrok+=d.brokerage||0;totalChg+=d.charges||0});
   return{brokerage:Math.round(totalBrok*100)/100,charges:Math.round(totalChg*100)/100,total:Math.round((totalBrok+totalChg)*100)/100};
 }
+
+// ════════════════════════════════════════════
+// INTERACTIVITY ENGINE
+// ════════════════════════════════════════════
+
+// ── Ripple effect on buttons & cards ─────────────────────────────
+function addRipple(e) {
+  const el = e.currentTarget;
+  const r = document.createElement('span');
+  r.className = 'ripple';
+  const rect = el.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height);
+  r.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
+  el.appendChild(r);
+  setTimeout(() => r.remove(), 600);
+}
+
+// Apply ripple to save button and nav tabs
+document.querySelectorAll('.save-btn,.ntab,.htab,.reset-btn').forEach(el => {
+  el.classList.add('ripple-host');
+  el.addEventListener('click', addRipple);
+});
+
+// ── Scroll-to-top visibility ──────────────────────────────────────
+window.addEventListener('scroll', () => {
+  const btn = document.getElementById('scroll-top');
+  if (btn) btn.classList.toggle('visible', window.scrollY > 300);
+}, {passive: true});
+
+// ── Smooth nav tab indicator ──────────────────────────────────────
+function updateNavIndicator() {
+  const nav = document.querySelector('.nav');
+  const activeTab = nav ? nav.querySelector('.ntab.active') : null;
+  let indicator = nav ? nav.querySelector('.nav-indicator') : null;
+  if (!nav) return;
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.className = 'nav-indicator';
+    nav.appendChild(indicator);
+  }
+  if (activeTab) {
+    indicator.style.left = activeTab.offsetLeft + 'px';
+    indicator.style.width = activeTab.offsetWidth + 'px';
+  }
+}
+
+// Patch switchTab to update indicator
+const _origSwitchTab = switchTab;
+window.switchTab = function(name) {
+  _origSwitchTab(name);
+  setTimeout(updateNavIndicator, 10);
+};
+setTimeout(updateNavIndicator, 100);
+window.addEventListener('resize', updateNavIndicator);
+
+// ── Collapsible trade cards ───────────────────────────────────────
+document.addEventListener('click', e => {
+  const head = e.target.closest('.tc-head');
+  if (!head) return;
+  const card = head.closest('.tcard');
+  if (!card) return;
+  // Don't collapse if clicking delete
+  if (e.target.closest('.del-btn')) return;
+  const body = card.querySelector('.tc-body');
+  if (!body) return;
+  const isExpanded = card.classList.contains('expanded');
+  if (isExpanded) {
+    body.style.maxHeight = body.scrollHeight + 'px';
+    requestAnimationFrame(() => {
+      body.style.transition = 'max-height .25s ease, opacity .2s ease';
+      body.style.maxHeight = '0';
+      body.style.opacity = '0';
+      body.style.overflow = 'hidden';
+    });
+    setTimeout(() => {
+      card.classList.remove('expanded');
+      body.style.display = 'none';
+      body.style.maxHeight = '';
+      body.style.opacity = '';
+      body.style.overflow = '';
+      body.style.transition = '';
+    }, 250);
+  } else {
+    card.classList.add('expanded');
+    body.style.display = 'block';
+    body.style.maxHeight = '0';
+    body.style.opacity = '0';
+    body.style.overflow = 'hidden';
+    body.style.transition = 'max-height .28s ease, opacity .2s ease';
+    requestAnimationFrame(() => {
+      body.style.maxHeight = body.scrollHeight + 'px';
+      body.style.opacity = '1';
+    });
+    setTimeout(() => {
+      body.style.maxHeight = '';
+      body.style.overflow = '';
+      body.style.transition = '';
+    }, 300);
+  }
+});
+
+// ── Chart click drill-down — filter trade log by market ──────────
+let activeMarketFilter = null;
+
+function setMarketFilter(market) {
+  activeMarketFilter = market;
+  // Show filter badge
+  let badge = document.getElementById('market-filter-badge');
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.id = 'market-filter-badge';
+    badge.className = 'filter-badge';
+    badge.onclick = () => clearMarketFilter();
+    const logList = document.getElementById('history-list');
+    if (logList) logList.parentNode.insertBefore(badge, logList);
+  }
+  badge.innerHTML = `Filtered: <strong>${market}</strong> <span class="fb-x">✕</span>`;
+  badge.style.display = 'inline-flex';
+  // Switch to log tab and re-render with filter
+  switchHTab('log');
+  renderLog(market);
+}
+
+function clearMarketFilter() {
+  activeMarketFilter = null;
+  const badge = document.getElementById('market-filter-badge');
+  if (badge) badge.style.display = 'none';
+  renderLog();
+}
+
+// ── Make market bar chart clickable ──────────────────────────────
+const _origRenderMarketCharts = renderMarketCharts;
+window.renderMarketCharts = function(trades) {
+  _origRenderMarketCharts(trades);
+  // Add click handler to market bar
+  setTimeout(() => {
+    const barInst = chartInstances['market-bar'];
+    if (barInst && barInst.canvas) {
+      barInst.canvas.style.cursor = 'pointer';
+      barInst.canvas.onclick = (e) => {
+        const pts = barInst.getElementsAtEventForMode(e, 'nearest', {intersect: true}, false);
+        if (pts.length) {
+          const label = barInst.data.labels[pts[0].index];
+          setMarketFilter(label);
+        }
+      };
+    }
+    const pieInst = chartInstances['market-pie'];
+    if (pieInst && pieInst.canvas) {
+      pieInst.canvas.style.cursor = 'pointer';
+      pieInst.canvas.onclick = (e) => {
+        const pts = pieInst.getElementsAtEventForMode(e, 'nearest', {intersect: true}, false);
+        if (pts.length) {
+          const label = pieInst.data.labels[pts[0].index];
+          setMarketFilter(label);
+        }
+      };
+    }
+  }, 300);
+};
+
+// ── Drag-and-drop reordering in Trade Log ────────────────────────
+let dragSrc = null;
+
+function enableDragAndDrop(container) {
+  if (!container) return;
+  container.querySelectorAll('.tcard').forEach(card => {
+    card.setAttribute('draggable', 'true');
+    card.addEventListener('dragstart', e => {
+      dragSrc = card;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      container.querySelectorAll('.tcard').forEach(c => c.classList.remove('drag-over'));
+    });
+    card.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (card !== dragSrc) {
+        container.querySelectorAll('.tcard').forEach(c => c.classList.remove('drag-over'));
+        card.classList.add('drag-over');
+      }
+    });
+    card.addEventListener('drop', e => {
+      e.preventDefault();
+      if (dragSrc && dragSrc !== card) {
+        const cards = [...container.querySelectorAll('.tcard')];
+        const srcIdx = cards.indexOf(dragSrc);
+        const tgtIdx = cards.indexOf(card);
+        if (srcIdx < tgtIdx) container.insertBefore(dragSrc, card.nextSibling);
+        else container.insertBefore(dragSrc, card);
+      }
+      container.querySelectorAll('.tcard').forEach(c => c.classList.remove('drag-over'));
+    });
+  });
+}
+
+// Patch renderLog to enable drag-and-drop after render
+const _origRenderLog = renderLog;
+window.renderLog = function(marketFilter) {
+  // patch renderLog to optionally accept filter
+  const trades = getTrades();
+  const list = document.getElementById('history-list');
+  if (!list) { _origRenderLog(); return; }
+  let filtered = marketFilter
+    ? trades.filter(t => normaliseMarket(t.market) === marketFilter)
+    : trades;
+  if (!filtered.length && marketFilter) {
+    // Also try direct match
+    filtered = trades.filter(t => (t.market||'') === marketFilter);
+  }
+  // Call original but if filter active, temporarily override getTrades
+  if (marketFilter) {
+    const orig = window.getTrades;
+    window.getTrades = () => filtered;
+    _origRenderLog();
+    window.getTrades = orig;
+  } else {
+    _origRenderLog();
+  }
+  setTimeout(() => enableDragAndDrop(list), 100);
+};
+
+// Also enable drag after initial log render
+const _origSwitchHTab = switchHTab;
+window.switchHTab = function(name) {
+  _origSwitchHTab(name);
+  if (name === 'log') {
+    setTimeout(() => enableDragAndDrop(document.getElementById('history-list')), 200);
+  }
+};
+
+// ── KPI tooltip hints ─────────────────────────────────────────────
+function addKpiTooltips() {
+  const hints = {
+    'k-pnl': 'Net P&L after all charges',
+    'k-wr': 'Win Rate = Wins ÷ Total trades',
+    'k-trades': 'Total closed trades logged',
+    'k-avg': 'Average gross P&L per trade',
+    'k-pf': 'Profit Factor = Gross Wins ÷ Gross Losses',
+  };
+  Object.entries(hints).forEach(([id, tip]) => {
+    const el = document.getElementById(id);
+    if (el) el.closest('.kpi')?.setAttribute('data-tip', tip);
+  });
+}
+
+// ── Number counter animation for KPIs ────────────────────────────
+function animateNumber(el, target, duration = 600, prefix = '', suffix = '') {
+  const start = 0;
+  const startTime = performance.now();
+  const isNeg = target < 0;
+  const abs = Math.abs(target);
+  function step(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const ease = 1 - Math.pow(1 - progress, 3);
+    const current = abs * ease;
+    el.textContent = prefix + (isNeg ? '-' : '') + '₹' + Math.round(current).toLocaleString('en-IN') + suffix;
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// Patch setKPIs to animate numbers
+const _origSetKPIs = setKPIs;
+window.setKPIs = function(pnl, wr, total, avg, bestT, worstT, cur, pf, wins, losses, bes, bestWin, worstLoss) {
+  _origSetKPIs(pnl, wr, total, avg, bestT, worstT, cur, pf, wins, losses, bes, bestWin, worstLoss);
+  addKpiTooltips();
+  // Animate P&L
+  const pe = document.getElementById('k-pnl');
+  if (pe && total > 0) animateNumber(pe, pnl);
+};
+
+// ── Month nav buttons style enhancement ──────────────────────────
+document.querySelectorAll('[onclick*="changeMonth"]').forEach(btn => {
+  btn.classList.add('month-nav-btn');
+});
+
+// ── Initial ripple on checklist items ────────────────────────────
+document.querySelectorAll('.ci').forEach(item => {
+  item.addEventListener('click', addRipple);
+  item.classList.add('ripple-host');
+});
+
+// ── Keyboard shortcut: J = Journal, H = History, C = Checklist ───
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'j' || e.key === 'J') switchTab('journal');
+  if (e.key === 'h' || e.key === 'H') switchTab('history');
+  if (e.key === 'c' || e.key === 'C') switchTab('checklist');
+  if (e.key === 'Escape') clearMarketFilter();
+});
+
+// ── Animate trade cards in on load ───────────────────────────────
+function animateTradeCards(container) {
+  if (!container) return;
+  container.querySelectorAll('.tcard').forEach((card, i) => {
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(12px)';
+    card.style.transition = `opacity .3s ${i * 0.04}s ease, transform .3s ${i * 0.04}s ease`;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      });
+    });
+  });
+}
+
+// Patch renderLog to animate cards
+const _origRenderLogFinal = window.renderLog;
+window.renderLog = function(marketFilter) {
+  _origRenderLogFinal(marketFilter);
+  setTimeout(() => animateTradeCards(document.getElementById('history-list')), 50);
+};
+
+// ── Toast enhancement — stack multiple toasts ────────────────────
+const _origShowToast = showToast;
+window.showToast = function(msg) {
+  _origShowToast(msg);
+};
+
+console.log('%cTradeLog Pro — Interactive Mode Active', 'color:#c9a84c;font-family:monospace;font-weight:bold;font-size:14px');
 
 // ── FIREBASE CONFIG ───────────────────────────────
 // 🔧 REPLACE THESE WITH YOUR FIREBASE PROJECT VALUES
